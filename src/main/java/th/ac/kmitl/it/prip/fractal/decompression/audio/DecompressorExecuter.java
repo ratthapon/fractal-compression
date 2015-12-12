@@ -59,8 +59,7 @@ public class DecompressorExecuter extends Executer {
 			} else {
 				audioData = decompressor.decompress();
 				// store decoded audio
-				DataHandler.writeaudio(audioFilePath, audioData,
-						parameters.getOutExtension());
+				DataHandler.writeaudio(audioFilePath, audioData, parameters);
 			}
 			// logging
 			timing.add(idsIdx, String.format("%d", decompressor.time()));

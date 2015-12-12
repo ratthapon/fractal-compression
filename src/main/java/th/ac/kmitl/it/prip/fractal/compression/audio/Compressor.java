@@ -17,16 +17,16 @@ import org.apache.commons.math3.fitting.WeightedObservedPoints;
 import th.ac.kmitl.it.prip.fractal.Parameters;
 
 public class Compressor {
-	private Parameters parameters = null;
+	protected Parameters parameters = null;
 	private float[] data = null;
-	private final int[] parts;
-	private int nParts;
-	private int nSamples;
-	private AtomicInteger partProgress;
-	private AtomicInteger samplesProgress;
-	private long initTime;
-	private long completeTime;
-	private boolean isDone = false;
+	protected final int[] parts;
+	protected int nParts;
+	protected int nSamples;
+	protected AtomicInteger partProgress;
+	protected AtomicInteger samplesProgress;
+	protected long initTime;
+	protected long completeTime;
+	protected boolean isDone = false;
 
 	public Compressor(float[] inputAudioData, Parameters compressParameters) {
 		parameters = compressParameters;
@@ -39,7 +39,7 @@ public class Compressor {
 		partProgress = new AtomicInteger(0);
 	}
 
-	private boolean needToSegment(int from, int to) {
+	protected boolean needToSegment(int from, int to) {
 		// equivalent http://www.mathworks.com/help/matlab/ref/var.html
 
 		// check if no. of elements under segment bound
@@ -70,11 +70,16 @@ public class Compressor {
 		float var = sumOfChunk / (to - from);
 
 		// decide to segment
+		// using variance
 		boolean result = var > parameters.getThresh();
+		if (parameters.isUsingCV()) { // using coefficient of variance
+			float sd = (float) Math.sqrt(var) / mu;
+			result = sd > parameters.getThresh();
+		}
 		return result;
 	}
 
-	private int[] partition() {
+	protected int[] partition() {
 		int[] rangeSize = new int[nSamples]; // partitioned boundary size
 		boolean canPartition = true;
 
@@ -170,6 +175,7 @@ public class Compressor {
 			final int rangeBlockSize = (int) (parts[fIdx]);
 			final int bColEnd = rbIdx + rangeBlockSize - 1;
 			rbIdx = rbIdx + (int) parts[fIdx]; // cumulative for next range
+			final int rbCurrentIdx = rbIdx;
 
 			// parallel range mapping : queuing phase
 			rangeTask.add(new Callable<float[]>() {
@@ -181,9 +187,28 @@ public class Compressor {
 					float[] b = Arrays
 							.copyOfRange(data, bColStart, bColEnd + 1);
 
+					// set domain location
+					int dbStartIdx = 0;
+					int dbStopIdx = nSamples - rangeBlockSize
+							* parameters.getDomainScale() - 1;
+					// if frame is set
+					if (parameters.getFrameLength() > 0
+							&& nSamples > parameters.getFrameLength()) {
+						dbStartIdx = (rbCurrentIdx / parameters
+								.getFrameLength())
+								* parameters.getFrameLength();
+						dbStopIdx = dbStartIdx + parameters.getFrameLength();
+						// ensure frame is fit in data
+						if (dbStopIdx > nSamples - rangeBlockSize
+								* parameters.getDomainScale() - 1) {
+							dbStopIdx = nSamples - rangeBlockSize
+									* parameters.getDomainScale() - 1;
+							dbStartIdx = dbStopIdx
+									- parameters.getFrameLength() - 1;
+						}
+					}
 					// search similarity matched domain form entire data
-					for (int dbIdx = 0; dbIdx < nSamples - rangeBlockSize
-							* parameters.getDomainScale() - 1; dbIdx += parameters
+					for (int dbIdx = dbStartIdx; dbIdx < dbStopIdx; dbIdx += parameters
 							.getDStep()) {
 
 						// locate test domain
@@ -241,7 +266,7 @@ public class Compressor {
 							// evaluate sum square error
 							float R = 0f;
 							for (int j = 0; j < a.length; j++) {
-								R += Math.pow(((a[j] * B[1]) + B[0]) - b[j], 2);
+								R += Math.pow(b[j] - ((a[j] * B[1]) + B[0]), 2);
 							}
 
 							if (bestR > R) { // found self
@@ -294,9 +319,21 @@ public class Compressor {
 		return code; // code of each file
 	}
 
-	private float[] resample(float[] d) {
+	protected float[] resample(float[] d) {
 		int domainScale = parameters.getDomainScale();
 		float[] result = new float[d.length / domainScale];
+		for (int i = 0; i < d.length; i += domainScale) {
+			for (int j = 0; j < domainScale; j++) {
+				result[i / domainScale] = result[i / domainScale] + d[i + j];
+			}
+			result[i / domainScale] = result[i / domainScale] / domainScale;
+		}
+		return result;
+	}
+
+	protected double[] resample(double[] d) {
+		int domainScale = parameters.getDomainScale();
+		double[] result = new double[d.length / domainScale];
 		for (int i = 0; i < d.length; i += domainScale) {
 			for (int j = 0; j < domainScale; j++) {
 				result[i / domainScale] = result[i / domainScale] + d[i + j];

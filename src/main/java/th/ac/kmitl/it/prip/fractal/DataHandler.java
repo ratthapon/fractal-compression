@@ -1,6 +1,7 @@
 package th.ac.kmitl.it.prip.fractal;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -16,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -171,6 +174,22 @@ public class DataHandler {
 		}
 	}
 
+	public static void writeaudio(String fileName, double[] audioData,
+			Parameters parameters) {
+		switch (parameters.getOutExtension()) {
+		case "raw":
+			writeToRaw(fileName + "." + parameters.getOutExtension(), audioData);
+			break;
+		case "wav":
+			writeToWav(fileName + "." + parameters.getOutExtension(),
+					audioData, parameters.getSamplingRate());
+			break;
+
+		default:
+			break;
+		}
+	}
+
 	private static float[] rawToDat(String fileName) {
 		float[] audioData = null;
 		try {
@@ -280,7 +299,31 @@ public class DataHandler {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 	}
 
+	private static void writeToWav(String fileName, double[] audioData,
+			int sampleRate) {
+		final boolean bigEndian = false;
+		final int nBit = 16;
+		final int nCH = 1;
+		try {
+			byte[] byteBuffer = new byte[audioData.length * 2];
+			short[] valueBuffer = new short[audioData.length];
+			for (int i = 0; i < valueBuffer.length; i++) {
+				valueBuffer[i] = (short) ((audioData[i] / Math.pow(2, 15)) * Short.MAX_VALUE);
+			}
+			ByteBuffer.wrap(byteBuffer).order(ByteOrder.LITTLE_ENDIAN)
+					.asShortBuffer().put(valueBuffer);
+			ByteArrayInputStream bais = new ByteArrayInputStream(byteBuffer);
+			AudioFormat format = new AudioFormat((float) sampleRate, nBit, nCH,
+					true, bigEndian);
+			AudioInputStream ais = new AudioInputStream(bais, format,
+					byteBuffer.length);
+			AudioSystem.write(ais, AudioFileFormat.Type.WAVE,
+					Paths.get(fileName).toFile());
+			ais.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }

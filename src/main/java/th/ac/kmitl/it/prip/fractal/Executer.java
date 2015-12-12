@@ -26,7 +26,7 @@ public class Executer {
 		processParameters();
 	}
 
-	protected static void processParameters(List<String> lines) {
+	public static void processParameters(List<String> lines) {
 		String[] result = new String[lines.size()];
 		for (int i = 0; i < lines.size(); i++) {
 			result[i] = lines.get(i);
@@ -59,6 +59,7 @@ public class Executer {
 			System.out.println("Incorrect parameters");
 			System.exit(0);
 		}
+		System.out.println();
 	}
 
 	@SuppressWarnings("unused")

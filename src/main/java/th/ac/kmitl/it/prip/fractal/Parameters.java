@@ -3,7 +3,6 @@ package th.ac.kmitl.it.prip.fractal;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Parameters {
@@ -26,6 +25,7 @@ public class Parameters {
 	private boolean skipIfExist = true;
 	private boolean isHelp;
 	private boolean validParams;
+	private int overlap = 0;
 
 	// compression parameters
 	private boolean adaptivePartition = true;
@@ -36,7 +36,9 @@ public class Parameters {
 	private int maxBlockSize = 128;
 	private float thresh = 1e-4f;
 	private int domainScale = 2;
-	private int maxDomainSize = -1;
+	private int frameLength = -1;
+	private boolean usingCV = false;
+	private boolean gpuEnable = false;
 
 	// decompression parameters
 	private double alpha = 1.0d;
@@ -47,7 +49,6 @@ public class Parameters {
 	}
 
 	public Parameters(String[] args) {
-		new Parameters();
 		this.generateFrom(args);
 	}
 
@@ -67,9 +68,8 @@ public class Parameters {
 				e.printStackTrace();
 			}
 		}
-		if (testName == null) {
-			testName = Paths.get(infile).getFileName().toString()
-					.replaceAll(".txt", "").replaceAll(".fileids", "");
+		if (frameLength > 0 && frameLength < maxBlockSize * domainScale) {
+			frameLength = maxBlockSize * domainScale;
 		}
 		if (outdir == null) {
 			outdir = "..";
@@ -80,21 +80,35 @@ public class Parameters {
 		if (outExtension == null) {
 			outExtension = "bin";
 		}
-		String codeDir = String
-				.format("//FractalCode//%s_R%dto%d_T%s_AA%d_S%d_NCOEF%d_LIMCOEFF%1.1e//",
-						testName, minBlockSize, maxBlockSize,
-						String.format("%1.1e", thresh), domainScale, dStep,
-						nCoeff, coeffLimit);
-		outdir = Paths.get(outdir, codeDir).toAbsolutePath().toString();
+		if (testName == null) {
+			testName = Paths.get(infile).getFileName().toString()
+					.replaceAll(".txt", "").replaceAll(".fileids", "");
+			String codeDir = String
+					.format("//%s_R%dto%d_T%s_AA%d_S%d_NCOEF%d_LIMCOEFF%1.1e//",
+							testName, minBlockSize, maxBlockSize,
+							String.format("%1.1e", thresh), domainScale, dStep,
+							nCoeff, coeffLimit);
+			outdir = Paths.get(outdir, codeDir).toAbsolutePath().toString();
+		} else {
+			String codeDir = String.format("//%s//", testName);
+			outdir = Paths.get(outdir, codeDir).toAbsolutePath().toString();
+		}
 		validParams = true;
 	}
 
 	public Parameters generateFrom(String[] args) {
+		new Parameters();
 		for (String arg : args) {
 			try {
-				String argName = arg.substring(0, arg.indexOf(" "));
-				String argValue = arg.substring(arg.indexOf(" ") + 1,
-						arg.length());
+				String[] params = arg.split(" ", 2);
+				String argName = "";
+				String argValue = "";
+				if (params.length == 2) {
+					argName = params[0];
+					argValue = params[1];
+				} else if (params.length == 1) {
+					argName = params[0];
+				}
 				setParameter(argName, argValue);
 			} catch (IndexOutOfBoundsException e) {
 				if (arg.equalsIgnoreCase("help")) {
@@ -144,7 +158,7 @@ public class Parameters {
 			dStep = Integer.parseInt(argValue);
 			break;
 		case "domainscale":
-		case "AA":
+		case "aa":
 			domainScale = Integer.parseInt(argValue);
 			break;
 		case "maxprocess": // max parallel process
@@ -156,6 +170,10 @@ public class Parameters {
 			break;
 		case "adaptive":
 			adaptivePartition = Boolean.parseBoolean(argValue);
+			break;
+		case "usingcv":
+		case "cv":
+			usingCV = Boolean.parseBoolean(argValue);
 			break;
 		case "reportrate":
 			progressReportRate = Long.parseLong(argValue);
@@ -178,10 +196,11 @@ public class Parameters {
 			samplingRate = Integer.parseInt(argValue);
 			break;
 		case "fromto":
-			Pattern pattern = Pattern.compile("(\\d+)-(\\d+)");
-			Matcher matcher = pattern.matcher(argValue);
-			fromIdx = Integer.parseInt(matcher.group(1)) - 1;
-			toIdx = Integer.parseInt(matcher.group(2));
+			if (Pattern.matches("(\\d+)-(\\d+)", argValue)) {
+				String[] values = argValue.split("-", 2);
+				fromIdx = Integer.parseInt(values[0]) - 1;
+				toIdx = Integer.parseInt(values[1]);
+			}
 			break;
 		case "processname":
 			processName = ProcessName.valueOf(argValue.toUpperCase());
@@ -189,6 +208,17 @@ public class Parameters {
 			break;
 		case "skipifexist":
 			skipIfExist = Boolean.parseBoolean(argValue);
+			break;
+		case "framelength":
+			frameLength = Integer.parseInt(argValue);
+			break;
+		case "overlap":
+			overlap = Integer.parseInt(argValue);
+			break;
+		case "gpuenable":
+		case "enablegpu":
+		case "gpu":
+			gpuEnable = Boolean.parseBoolean(argValue);
 			break;
 
 		default:
@@ -263,26 +293,34 @@ public class Parameters {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("Parameters \n[  testName = ");
+		builder.append("Parameters \n[  processName = ");
+		builder.append(processName);
+		builder.append("\n  testName = ");
 		builder.append(testName);
 		builder.append("\n  infile = ");
 		builder.append(infile);
+		builder.append("\n  inPathPrefix = ");
+		builder.append(inPathPrefix);
+		builder.append("\n  fromIdx = ");
+		builder.append(fromIdx);
+		builder.append("\n  toIdx = ");
+		builder.append(toIdx);
 		builder.append("\n  outdir = ");
 		builder.append(outdir);
-		builder.append("\n  audioExtension = ");
+		builder.append("\n  inExtension = ");
 		builder.append(inExtension);
-		builder.append("\n  codeExtension = ");
+		builder.append("\n  outExtension = ");
 		builder.append(outExtension);
-		builder.append("\n  minBlockSize = ");
-		builder.append(minBlockSize);
-		builder.append("\n  maxBlockSize = ");
-		builder.append(maxBlockSize);
-		builder.append("\n  thresh = ");
-		builder.append(thresh);
-		builder.append("\n  domainScale = ");
-		builder.append(domainScale);
 		builder.append("\n  maxParallelProcess = ");
 		builder.append(maxParallelProcess);
+		builder.append("\n  progressReportRate = ");
+		builder.append(progressReportRate);
+		builder.append("\n  skipIfExist = ");
+		builder.append(skipIfExist);
+		builder.append("\n  isHelp = ");
+		builder.append(isHelp);
+		builder.append("\n  validParams = ");
+		builder.append(validParams);
 		builder.append("\n  adaptivePartition = ");
 		builder.append(adaptivePartition);
 		builder.append("\n  dStep = ");
@@ -291,8 +329,24 @@ public class Parameters {
 		builder.append(nCoeff);
 		builder.append("\n  coeffLimit = ");
 		builder.append(coeffLimit);
-		builder.append("\n  validParams = ");
-		builder.append(validParams);
+		builder.append("\n  minBlockSize = ");
+		builder.append(minBlockSize);
+		builder.append("\n  maxBlockSize = ");
+		builder.append(maxBlockSize);
+		builder.append("\n  thresh = ");
+		builder.append(thresh);
+		builder.append("\n  domainScale = ");
+		builder.append(domainScale);
+		builder.append("\n  frameLength = ");
+		builder.append(frameLength);
+		builder.append("\n  usingCV = ");
+		builder.append(usingCV);
+		builder.append("\n  alpha = ");
+		builder.append(alpha);
+		builder.append("\n  maxIteration = ");
+		builder.append(maxIteration);
+		builder.append("\n  samplingRate = ");
+		builder.append(samplingRate);
 		builder.append("  ]\n");
 		return builder.toString();
 	}
@@ -333,8 +387,20 @@ public class Parameters {
 		return skipIfExist;
 	}
 
-	public int getMaxDomainSize() {
-		return maxDomainSize;
+	public int getFrameLength() {
+		return frameLength;
+	}
+
+	public boolean isUsingCV() {
+		return usingCV;
+	}
+
+	public int getOverlap() {
+		return overlap;
+	}
+
+	public boolean isGpuEnable() {
+		return gpuEnable;
 	}
 
 }

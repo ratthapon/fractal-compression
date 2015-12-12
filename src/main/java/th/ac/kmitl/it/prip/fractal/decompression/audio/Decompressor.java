@@ -27,20 +27,18 @@ public class Decompressor {
 		for (int i = 0; i < data.length; i++) {
 			nSamples += data[i][PART_SIZE_ELEMENT];
 		}
-		System.out.println("Decompressor constructor");
 	}
 
 	public double[] decompress() {
 		final int nCoeff = parameters.getNCoeff();
-		double[] audioData = new double[nSamples];
-		double[] bufferAudioData = new double[nSamples];
+		double[] audioData = new double[(int) (nSamples * parameters.getAlpha())];
+		double[] bufferAudioData = new double[audioData.length];
 		initTime = System.currentTimeMillis();
 		// iteration
 		for (int iter = 0; iter < parameters.getMaxIteration(); iter++) {
 			// each code
 			int rbIdx = 0;
 			for (int fIdx = 0; fIdx < nParts; fIdx++) {
-				System.out.println("Part " + fIdx + " / " + nParts);
 				int bufferSize = (int) (codes[fIdx][PART_SIZE_ELEMENT] * parameters
 						.getAlpha());
 				double[] domain = new double[bufferSize

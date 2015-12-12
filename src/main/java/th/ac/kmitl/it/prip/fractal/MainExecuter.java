@@ -4,13 +4,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.List;
 
 import th.ac.kmitl.it.prip.fractal.compression.audio.CompressorExecuter;
 import th.ac.kmitl.it.prip.fractal.decompression.audio.DecompressorExecuter;
 
 public class MainExecuter {
-	protected static ArrayList<String> readInput() {
-		ArrayList<String> parametersList = new ArrayList<>();
+	protected static List<String> readInput() {
+		List<String> parametersList = new ArrayList<>();
 		try {
 			BufferedReader br = new BufferedReader(new InputStreamReader(
 					System.in));

@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import th.ac.kmitl.it.prip.fractal.DataHandler;
 import th.ac.kmitl.it.prip.fractal.Executer;
+import th.ac.kmitl.it.prip.fractal.compression.audio.gpu.CUCompressor;
 
 public class CompressorExecuter extends Executer {
 	private static AtomicInteger processedSamples = new AtomicInteger(0);
@@ -26,7 +27,8 @@ public class CompressorExecuter extends Executer {
 	private static void estimate() {
 		// estimate runtime
 		final String[] idsList = DataHandler.getIdsPathList(parameters);
-		for (int i = 0; i < idsList.length; i++) {
+		for (int i = parameters.getFromIdx(); i < idsList.length
+				&& i < parameters.getToIdx(); i++) {
 			float[] inputAudioData = DataHandler.audioread(idsList[i],
 					parameters.getInExtension());
 			Compressor compressor = new Compressor(inputAudioData, parameters);
@@ -35,20 +37,23 @@ public class CompressorExecuter extends Executer {
 		}
 		int samplesUnit = (int) (Math.log10(nSamples) / 3);
 		int partsUnit = (int) (Math.log10(nParts) / 3);
-		System.out
-				.println(String.format("Expect %d %s samples %d %s parts",
-						(int) (nSamples / Math.pow(10, samplesUnit * 3)),
-						UNITS[samplesUnit],
-						(int) (nParts / Math.pow(10, partsUnit * 3)),
-						UNITS[partsUnit]));
+		System.out.println(String.format(
+				"Expect %.2f %s samples %.2f %s parts",
+				(nSamples / Math.pow(10, samplesUnit * 3)), UNITS[samplesUnit],
+				(nParts / Math.pow(10, partsUnit * 3)), UNITS[partsUnit]));
 	}
 
 	private static void compress() {
 		final String[] idsList = DataHandler.getIdsPathList(parameters);
 		final String[] nameList = DataHandler.getIdsNameList(parameters);
-		List<String> codePathList = new ArrayList<String>();
-		List<String> timing = new ArrayList<String>();
-		List<String> logs = new ArrayList<String>();
+		List<String> codePathList = new ArrayList<String>(idsList.length);
+		List<String> timing = new ArrayList<String>(idsList.length);
+		List<String> logs = new ArrayList<String>(idsList.length);
+		for (int i = 0; i < idsList.length; i++) {
+			codePathList.add(new String());
+			timing.add(new String());
+			logs.add(new String());
+		}
 
 		// single process executor
 		ExecutorService executorService = Executors.newFixedThreadPool(1);
@@ -100,9 +105,15 @@ public class CompressorExecuter extends Executer {
 						String codeFilePath = codeFile.toString();
 						float[] inputAudioData = DataHandler.audioread(
 								idsList[idsIdx], parameters.getInExtension());
-						codePathList.add(codeFilePath + "."
+						codePathList.set(idsIdx, nameList[idsIdx] + "."
 								+ parameters.getOutExtension());
-						compressor = new Compressor(inputAudioData, parameters);
+						if (parameters.isGpuEnable()) {
+							compressor = new CUCompressor(inputAudioData,
+									parameters);
+						} else {
+							compressor = new Compressor(inputAudioData,
+									parameters);
+						}
 						double[][] codes = null;
 
 						// start speed estimation
@@ -121,7 +132,7 @@ public class CompressorExecuter extends Executer {
 						// process compressor
 						if (parameters.isSkipIfExist() && codeFile.exists()) {
 							// skip
-							timing.add(idsIdx, String.format("%d", 0));
+							timing.set(idsIdx, String.format("%d", 0));
 							String log = "Skiped " + idsIdx + " "
 									+ nameList[idsIdx] + " progress "
 									+ compressor.getNSamples() + "/"
@@ -129,13 +140,17 @@ public class CompressorExecuter extends Executer {
 									+ compressor.getNParts() + "/"
 									+ compressor.getNParts() + " time "
 									+ compressor.time() / 1000 + " sec";
-							logs.add(log);
+							logs.set(idsIdx, log);
 							System.out.println(log);
 
 						} else {
-							codes = compressor.compress();
+							if (parameters.isGpuEnable()) {
+								codes = ((CUCompressor) compressor).compress();
+							} else {
+								codes = compressor.compress();
+							}
 							// logging
-							timing.add(idsIdx,
+							timing.set(idsIdx,
 									String.format("%d", compressor.time()));
 							String log = "Compressed " + idsIdx + " "
 									+ nameList[idsIdx] + " progress "
@@ -144,7 +159,7 @@ public class CompressorExecuter extends Executer {
 									+ compressor.countProcessedParts() + "/"
 									+ compressor.getNParts() + " time "
 									+ compressor.time() / 1000 + " sec";
-							logs.add(log);
+							logs.set(idsIdx, log);
 							System.out.println(log);
 
 							// store minimum value of self similarity
