@@ -14,7 +14,7 @@ public class DecompressorExecuter extends Executer {
 	private static void estimate() {
 		// estimate runtime
 		final String[] idsList = DataHandler.getIdsPathList(parameters);
-		for (int i = 0; i < idsList.length; i++) {
+		for (int i = 0; i < idsList.length && i < parameters.getToIdx(); i++) {
 			double[][] codes = DataHandler.codesread(idsList[i],
 					parameters.getInExtension());
 			Decompressor decompressor = new Decompressor(codes, parameters);

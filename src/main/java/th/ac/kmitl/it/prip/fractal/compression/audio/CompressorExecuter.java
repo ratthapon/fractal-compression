@@ -103,6 +103,12 @@ public class CompressorExecuter extends Executer {
 						File codeFile = Paths.get(parameters.getOutdir(), "\\",
 								nameList[idsIdx]).toFile();
 						String codeFilePath = codeFile.toString();
+						codeFile = Paths.get(
+								parameters.getOutdir(),
+								"\\",
+								nameList[idsIdx] + "."
+										+ parameters.getOutExtension())
+								.toFile();
 						float[] inputAudioData = DataHandler.audioread(
 								idsList[idsIdx], parameters.getInExtension());
 						codePathList.set(idsIdx, nameList[idsIdx] + "."
@@ -128,7 +134,6 @@ public class CompressorExecuter extends Executer {
 							printTimer.scheduleAtFixedRate(printState, 0,
 									parameters.getProgressReportRate());
 						}
-
 						// process compressor
 						if (parameters.isSkipIfExist() && codeFile.exists()) {
 							// skip
