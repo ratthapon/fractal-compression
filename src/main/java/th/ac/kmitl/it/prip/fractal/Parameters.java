@@ -39,6 +39,7 @@ public class Parameters {
 	private int frameLength = -1;
 	private boolean usingCV = false;
 	private boolean gpuEnable = false;
+	private float regularize = 0.0f;
 
 	// decompression parameters
 	private double alpha = 1.0d;
@@ -219,6 +220,9 @@ public class Parameters {
 		case "enablegpu":
 		case "gpu":
 			gpuEnable = Boolean.parseBoolean(argValue);
+			break;
+		case "reguralize":
+			regularize = Float.parseFloat(argValue);
 			break;
 
 		default:
@@ -401,6 +405,10 @@ public class Parameters {
 
 	public boolean isGpuEnable() {
 		return gpuEnable;
+	}
+
+	public float getRegularize() {
+		return regularize;
 	}
 
 }

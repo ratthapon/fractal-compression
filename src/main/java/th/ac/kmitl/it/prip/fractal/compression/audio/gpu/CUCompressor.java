@@ -210,6 +210,7 @@ public class CUCompressor extends Compressor {
 					Pointer.to(new int[] { nCoeff }),
 					Pointer.to(new int[] { dbStopIdx }),
 					Pointer.to(new int[] { parameters.getDomainScale() }),
+					Pointer.to(new float[] { parameters.getRegularize() }),
 					Pointer.to(deviceData),
 					Pointer.to(deviceDataRev),
 					Pointer.to(dR),
@@ -258,7 +259,7 @@ public class CUCompressor extends Compressor {
 					JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_T,
 							CUBLAS_OP_N, nCoeff, nCoeff, rbs,
 							Pointer.to(new float[] { 1.0f }), dDAP, rbs, dDAP,
-							rbs, Pointer.to(new float[] { 0.0f }), dAAP,
+							rbs, Pointer.to(new float[] { 1.0f }), dAAP,
 							nCoeff, nBatch);
 					JCuda.cudaStreamSynchronize(stream);
 

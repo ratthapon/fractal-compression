@@ -1,6 +1,9 @@
 package th.ac.kmitl.it.prip.fractal;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -39,7 +42,14 @@ public class MainExecuter {
 	}
 
 	public static void main(String[] args) {
-		Executer.processParameters(readInput());
-		exec();
+		try {
+			if (args.length > 0) {
+				System.setIn(new FileInputStream(args[0]));
+			}
+			Executer.processParameters(readInput());
+			exec();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 }

@@ -1,6 +1,6 @@
 extern "C"
 __global__ void memSetKernel(
-int nBatch,int nRangeBlockSize,int nCoeff,int dbStopIdx,int dScale,
+int nBatch,int nRangeBlockSize,int nCoeff,int dbStopIdx,int dScale, float regularize,
 
 float *data,float *dataRev, // array of data and reverse data
 float *R, // array of range
@@ -60,6 +60,12 @@ float **EP, float **SP
 		for(int j = 0; j < nRangeBlockSize; j++){
 			*(RA + rpOffset + j) = *(R + j);
 			*(EA + rpOffset + j) = *(R + j);
+		}
+		
+		// initialize covariance matrix with regularization
+		int apOffset = (taskIdx * nCoeff * nCoeff);
+		for(int i = 0; i < nCoeff * nCoeff; i+= nCoeff+1){
+			*(AA + apOffset + i) = regularize * regularize; // power 0
 		}
 		
 		// pointing section
