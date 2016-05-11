@@ -94,4 +94,8 @@ public class DecompressorExecuter extends Executer {
 
 	}
 
+	private DecompressorExecuter() {
+
+	}
+
 }

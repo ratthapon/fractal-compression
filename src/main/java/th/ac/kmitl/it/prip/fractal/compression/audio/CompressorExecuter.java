@@ -89,9 +89,9 @@ public class CompressorExecuter extends Executer {
 									+ compressor.getNSamples() + " part "
 									+ compressor.countProcessedParts() + "/"
 									+ compressor.getNParts());
-							LOGGER.log(Level.INFO, " Speed " + samplesCompressSpeed
-									+ " samples/sec " + partsCompressSpeed
-									+ " parts/sec");
+							LOGGER.log(Level.INFO, " Speed "
+									+ samplesCompressSpeed + " samples/sec "
+									+ partsCompressSpeed + " parts/sec");
 						}
 					};
 
@@ -176,5 +176,9 @@ public class CompressorExecuter extends Executer {
 			estimate();
 			compress();
 		}
+	}
+
+	private CompressorExecuter() {
+
 	}
 }

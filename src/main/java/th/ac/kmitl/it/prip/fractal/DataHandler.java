@@ -30,6 +30,10 @@ import com.jmatio.types.MLDouble;
 public class DataHandler {
 	private static final Logger LOGGER = Logger.getLogger(DataHandler.class
 			.getName());
+	
+	private DataHandler(){
+		
+	}
 
 	/**
 	 * @param fileIds

@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Executer {
+public abstract class Executer {
 	private static final Logger LOGGER = Logger.getLogger(Executer.class
 			.getName());
 
@@ -98,8 +98,6 @@ public class Executer {
 		// generate output
 	}
 
-	public Executer() {
-		super();
+	protected Executer() {
 	}
-
 }

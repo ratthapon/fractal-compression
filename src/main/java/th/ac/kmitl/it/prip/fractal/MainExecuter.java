@@ -24,4 +24,7 @@ public class MainExecuter {
 
 	}
 
+	private MainExecuter() {
+	}
+
 }
