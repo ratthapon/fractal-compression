@@ -62,7 +62,7 @@ public class DataHandler {
 			return idsArrays;
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
-			return null;
+			return new String[0];
 		}
 	}
 
@@ -80,7 +80,7 @@ public class DataHandler {
 			return idsArrays;
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
-			return null;
+			return new String[0];
 		}
 	}
 
@@ -258,7 +258,7 @@ public class DataHandler {
 
 	@SuppressWarnings("unused")
 	private static double[][] binToCodes(String fileName) {
-		return null;
+		return new double[0][0];
 	}
 
 	private static void writeToRaw(String fileName, double[] audioData) {
