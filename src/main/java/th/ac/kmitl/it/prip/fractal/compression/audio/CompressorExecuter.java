@@ -19,10 +19,10 @@ public class CompressorExecuter extends Executer {
 	private static final Logger LOGGER = Logger
 			.getLogger(CompressorExecuter.class.getName());
 
-	public static AtomicInteger processedSamples = new AtomicInteger(0);
-	public static AtomicInteger processedParts = new AtomicInteger(0);
-	public static AtomicInteger passedNSamples = new AtomicInteger(0);
-	public static AtomicInteger passedNParts = new AtomicInteger(0);
+	private static AtomicInteger processedSamples = new AtomicInteger(0);
+	private static AtomicInteger processedParts = new AtomicInteger(0);
+	private static AtomicInteger passedNSamples = new AtomicInteger(0);
+	private static AtomicInteger passedNParts = new AtomicInteger(0);
 
 	private static void estimate() {
 		// estimate runtime
@@ -131,5 +131,21 @@ public class CompressorExecuter extends Executer {
 
 	private CompressorExecuter() {
 
+	}
+
+	public static AtomicInteger getProcessedSamples() {
+		return processedSamples;
+	}
+
+	public static AtomicInteger getProcessedParts() {
+		return processedParts;
+	}
+
+	public static AtomicInteger getPassedNSamples() {
+		return passedNSamples;
+	}
+
+	public static AtomicInteger getPassedNParts() {
+		return passedNParts;
 	}
 }

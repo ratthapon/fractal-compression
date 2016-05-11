@@ -44,17 +44,17 @@ public class Compressor {
 		@Override
 		public void run() {
 
-			int processingSamples = CompressorExecuter.processedSamples.get()
-					+ countProcessedSamples();
-			samplesCompressSpeed = (processingSamples - CompressorExecuter.passedNSamples
-					.get()) / (Executer.DELTA_TIME / 1000);
-			CompressorExecuter.passedNSamples.set(processingSamples);
+			int processingSamples = CompressorExecuter.getProcessedSamples()
+					.get() + countProcessedSamples();
+			samplesCompressSpeed = (processingSamples - CompressorExecuter
+					.getPassedNSamples().get()) / (Executer.DELTA_TIME / 1000);
+			CompressorExecuter.getPassedNSamples().set(processingSamples);
 
-			int processingParts = CompressorExecuter.processedParts.get()
+			int processingParts = CompressorExecuter.getProcessedParts().get()
 					+ countProcessedParts();
-			partsCompressSpeed = (processingParts - CompressorExecuter.passedNParts
-					.get()) / (Executer.DELTA_TIME / 1000);
-			CompressorExecuter.passedNParts.set(processingParts);
+			partsCompressSpeed = (processingParts - CompressorExecuter
+					.getPassedNParts().get()) / (Executer.DELTA_TIME / 1000);
+			CompressorExecuter.getPassedNParts().set(processingParts);
 		}
 	};
 	private TimerTask printState = new TimerTask() {
@@ -261,8 +261,9 @@ public class Compressor {
 		}
 		isDone = true;
 
-		CompressorExecuter.processedSamples.addAndGet(countProcessedSamples());
-		CompressorExecuter.processedParts.addAndGet(countProcessedParts());
+		CompressorExecuter.getProcessedSamples().addAndGet(
+				countProcessedSamples());
+		CompressorExecuter.getProcessedParts().addAndGet(countProcessedParts());
 		speedEstimator.cancel();
 		if (printTimer != null) {
 			printTimer.cancel();
