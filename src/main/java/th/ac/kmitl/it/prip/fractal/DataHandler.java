@@ -283,7 +283,7 @@ public class DataHandler {
 		MLDouble mlDouble = new MLDouble(varName, codeData);
 
 		// write array to file
-		ArrayList<MLArray> list = new ArrayList<MLArray>();
+		List<MLArray> list = new ArrayList<MLArray>();
 		list.add(mlDouble);
 
 		// write arrays to file

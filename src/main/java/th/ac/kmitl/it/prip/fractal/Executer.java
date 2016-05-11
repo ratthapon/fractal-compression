@@ -26,7 +26,7 @@ public abstract class Executer {
 	protected static int nParts = 0;
 
 	protected static void readParameters() {
-		ArrayList<String> parametersList = new ArrayList<>();
+		List<String> parametersList = new ArrayList<>();
 		try {
 			BufferedReader br = new BufferedReader(new InputStreamReader(
 					System.in));
