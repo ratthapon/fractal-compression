@@ -218,20 +218,20 @@ public class Compressor {
 									.create(nCoeff - 1);
 							// Retrieve fitted parameters (coefficients of the
 							// polynomial function).
-							double[] coeff = fitter.fit(obs.toList());
-							float[] B = new float[nCoeff];
-							for (int i = 0; i < coeff.length; i++) {
-								B[i] = (float) coeff[i];
+							double[] tempCoeff = fitter.fit(obs.toList());
+							float[] coeff = new float[nCoeff];
+							for (int i = 0; i < tempCoeff.length; i++) {
+								coeff[i] = (float) tempCoeff[i];
 							}
 
 							// limit coefficient
 							float maxCoeff = parameters.getCoeffLimit();
-							if ((coeff[1] > maxCoeff || coeff[1] < -maxCoeff)
+							if ((tempCoeff[1] > maxCoeff || tempCoeff[1] < -maxCoeff)
 									&& nCoeff == 2) {
-								if (coeff[1] > maxCoeff) {
-									B[1] = maxCoeff;
-								} else if (coeff[1] < -maxCoeff) {
-									B[1] = -maxCoeff;
+								if (tempCoeff[1] > maxCoeff) {
+									coeff[1] = maxCoeff;
+								} else if (tempCoeff[1] < -maxCoeff) {
+									coeff[1] = -maxCoeff;
 								}
 								double suma = Arrays
 										.asList(ArrayUtils.toObject(a))
@@ -239,23 +239,23 @@ public class Compressor {
 								double sumb = Arrays
 										.asList(ArrayUtils.toObject(b))
 										.stream().mapToDouble(i -> i).sum();
-								B[0] = (float) ((sumb - B[1] * suma) / a.length);
+								coeff[0] = (float) ((sumb - coeff[1] * suma) / a.length);
 
 							}
 
 							// evaluate sum square error
-							float R = 0f;
+							float sumSqrError = 0f;
 							for (int j = 0; j < a.length; j++) {
-								R += Math.pow(((a[j] * B[1]) + B[0]) - b[j], 2);
+								sumSqrError += Math.pow(((a[j] * coeff[1]) + coeff[0]) - b[j], 2);
 							}
 
-							if (bestR > R) { // found self
+							if (bestR > sumSqrError) { // found self
 								// parameters that
 								// less than stored parameter s
-								bestR = R;
+								bestR = sumSqrError;
 								// store minimum value of self similarity
 								for (int i = 0; i < nCoeff; i++) {
-									codeChunk[i] = B[i];
+									codeChunk[i] = coeff[i];
 								}
 								// set domain index
 								codeChunk[nCoeff] = (float) (dbIdx + 1);

@@ -30,9 +30,11 @@ import com.jmatio.types.MLDouble;
 public class DataHandler {
 	private static final Logger LOGGER = Logger.getLogger(DataHandler.class
 			.getName());
-	
-	private DataHandler(){
-		
+
+	final static int RAW_N_BYTES = 2;
+
+	private DataHandler() {
+
 	}
 
 	/**
@@ -261,7 +263,7 @@ public class DataHandler {
 
 	private static void writeToRaw(String fileName, double[] audioData) {
 		try {
-			final int RAW_N_BYTES = 2;
+
 			short[] shortBuffer = new short[audioData.length];
 			for (int i = 0; i < shortBuffer.length; i++) {
 				shortBuffer[i] = (short) audioData[i];
