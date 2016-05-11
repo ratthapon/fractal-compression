@@ -113,12 +113,17 @@ public class CompressorExecuter extends Executer {
 								idsList[idsIdx], parameters.getInExtension());
 						codePathList.set(idsIdx, nameList[idsIdx] + "."
 								+ parameters.getOutExtension());
-						if (parameters.isGpuEnable()) {
-							compressor = new CUCompressor(inputAudioData,
-									parameters);
-						} else {
-							compressor = new Compressor(inputAudioData,
-									parameters);
+						try {
+							if (parameters.isGpuEnable()) {
+								compressor = new CUCompressor(inputAudioData,
+										parameters);
+							} else {
+								compressor = new Compressor(inputAudioData,
+										parameters);
+							}
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
 						}
 						double[][] codes = null;
 

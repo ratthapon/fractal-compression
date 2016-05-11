@@ -57,7 +57,7 @@ public class Executer {
 		// validate parameters
 		if (!parameters.isValidParams()) {
 			System.out.println("Incorrect parameters");
-			System.exit(0);
+			System.exit(42);
 		}
 		System.out.println();
 	}

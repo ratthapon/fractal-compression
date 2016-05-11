@@ -1,6 +1,6 @@
 extern "C"
 __global__ void memSetKernel(
-int nBatch,int nRangeBlockSize,int nCoeff,int dbStopIdx,int dScale, float regularize,
+int nBatch,int nRangeBlockSize,int inCoeff,int dbStopIdx,int dScale, float regularize,
 
 float *data,float *dataRev, // array of data and reverse data
 float *R, // array of range
@@ -17,6 +17,7 @@ float **IP, float **CP,
 float **EP, float **SP
 )
 {
+	int nCoeff = inCoeff + 1;
     int taskIdx = blockIdx.x * blockDim.x + threadIdx.x;
     if (taskIdx < nBatch)
     {
