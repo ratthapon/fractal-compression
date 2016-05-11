@@ -280,12 +280,12 @@ public class Compressor {
 	}
 
 	private float[] reverseBlock(float[] a, int rev) {
+		float[] reverseA = new float[a.length];
 		if (rev == 1) {
-			float[] reverseA = new float[a.length];
 			for (int i = 0; i < a.length; i++) {
 				reverseA[i] = a[a.length - i - 1];
 			}
-			a = reverseA;
+			return reverseA;
 		}
 		return a;
 	}

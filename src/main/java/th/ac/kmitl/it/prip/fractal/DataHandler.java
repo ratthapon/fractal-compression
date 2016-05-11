@@ -87,13 +87,14 @@ public class DataHandler {
 	@SuppressWarnings("unused")
 	private static String removeExtension(String fileName) {
 		List<String> extList = new ArrayList<String>();
+		String newFileName = fileName;
 		try {
 			InputStream in = DataHandler.class
 					.getResourceAsStream("supportextension.txt");
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			extList = br.lines().collect(Collectors.toList());
 			for (String ext : extList) {
-				fileName = fileName.replace(ext, "");
+				newFileName = fileName.replace(ext, "");
 			}
 			in.close();
 			br.close();
@@ -101,7 +102,7 @@ public class DataHandler {
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
 		}
-		return fileName;
+		return newFileName;
 	}
 
 	private static String[] removeExtension(String[] fileName) {
