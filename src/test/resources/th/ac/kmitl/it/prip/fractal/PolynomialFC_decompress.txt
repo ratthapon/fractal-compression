@@ -1,0 +1,10 @@
+processname decompress
+testname AN4_8K_UTEST_POLY
+infile F://IFEFSR//TestAudioCompressor//FractalCode//AN4_8K_UTEST_POLY//codelist.txt
+inpathprefix F://IFEFSR//TestAudioCompressor//FractalCode//AN4_8K_UTEST_POLY
+outdir F://IFEFSR//TestAudioCompressor//Decompress//
+maxprocess 7
+inext mat
+outext wav
+fs 8000
+

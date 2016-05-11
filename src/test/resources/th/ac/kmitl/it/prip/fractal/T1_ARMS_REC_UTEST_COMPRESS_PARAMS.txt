@@ -1,0 +1,12 @@
+processname compress
+testname ARMS_REC_UTEST
+infile F://IFEFSR//TestAudioCompressor//8k_ARMS_REC_INT.txt
+inpathprefix F://IFEFSR//SpeechData//ARMS_REC
+outdir F://IFEFSR//TestAudioCompressor//
+maxprocess 4
+inext wav
+outext mat
+pthresh 1e-4
+reportrate 5000
+fromto 1-1
+

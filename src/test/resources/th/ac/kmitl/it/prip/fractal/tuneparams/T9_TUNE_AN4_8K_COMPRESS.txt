@@ -1,0 +1,13 @@
+processname compress
+testname AN4_8K_TUNE_AA_4
+infile F://IFEFSR//TestAudioCompressor//an4_test.fileids
+inpathprefix F://IFEFSR//Sphinx//an4_8k//wav//
+outdir F://IFEFSR//TestAudioCompressor//
+maxprocess 7
+inext raw
+outext mat
+pthresh 1e-5
+reportrate 0
+fromto 1-1
+AA 4
+
