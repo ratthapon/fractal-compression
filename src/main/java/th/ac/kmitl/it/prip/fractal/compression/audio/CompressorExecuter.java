@@ -10,11 +10,16 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import th.ac.kmitl.it.prip.fractal.DataHandler;
 import th.ac.kmitl.it.prip.fractal.Executer;
 
 public class CompressorExecuter extends Executer {
+	private static final Logger LOGGER = Logger
+			.getLogger(CompressorExecuter.class.getName());
+
 	private static AtomicInteger processedSamples = new AtomicInteger(0);
 	private static AtomicInteger processedParts = new AtomicInteger(0);
 	private static AtomicInteger passedNSamples = new AtomicInteger(0);
@@ -156,7 +161,7 @@ public class CompressorExecuter extends Executer {
 			}
 			executorService.invokeAll(compressorQueue);
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		} finally {
 			executorService.shutdown();
 		}
@@ -166,8 +171,10 @@ public class CompressorExecuter extends Executer {
 		readParameters();
 		System.out.println("Test name " + parameters.getTestName());
 		System.out.println(parameters.toString());
-		prepare();
-		estimate();
-		compress();
+		if (parameters.isValidParams()) {
+			prepare();
+			estimate();
+			compress();
+		}
 	}
 }

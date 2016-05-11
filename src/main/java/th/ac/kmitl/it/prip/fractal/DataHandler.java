@@ -14,6 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import javax.sound.sampled.AudioInputStream;
@@ -26,6 +28,9 @@ import com.jmatio.types.MLArray;
 import com.jmatio.types.MLDouble;
 
 public class DataHandler {
+	private static final Logger LOGGER = Logger.getLogger(DataHandler.class
+			.getName());
+
 	/**
 	 * @param fileIds
 	 *            input file that store paths of audio data
@@ -50,7 +55,7 @@ public class DataHandler {
 			}
 			return idsArrays;
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 			return null;
 		}
 	}
@@ -68,7 +73,7 @@ public class DataHandler {
 			}
 			return idsArrays;
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 			return null;
 		}
 	}
@@ -88,7 +93,7 @@ public class DataHandler {
 			br.close();
 
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		}
 		return fileName;
 	}
@@ -108,7 +113,7 @@ public class DataHandler {
 				}
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		}
 		return fileName;
 	}
@@ -189,7 +194,7 @@ public class DataHandler {
 
 			fis.close();
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		}
 		return audioData;
 	}
@@ -227,7 +232,7 @@ public class DataHandler {
 			}
 			ais.close();
 		} catch (UnsupportedAudioFileException | IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		}
 		return audioData;
 	}
@@ -238,9 +243,9 @@ public class DataHandler {
 			MatFileReader mfr = new MatFileReader(fileName);
 			codes = ((MLDouble) mfr.getMLArray("f")).getArray();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		}
 		return codes;
 	}
@@ -257,12 +262,13 @@ public class DataHandler {
 			for (int i = 0; i < shortBuffer.length; i++) {
 				shortBuffer[i] = (short) audioData[i];
 			}
-			ByteBuffer buffer = ByteBuffer.allocate(shortBuffer.length
-					* RAW_N_BYTES).order(ByteOrder.LITTLE_ENDIAN);
+			ByteBuffer buffer = ByteBuffer.allocate(
+					shortBuffer.length * RAW_N_BYTES).order(
+					ByteOrder.LITTLE_ENDIAN);
 			buffer.asShortBuffer().put(shortBuffer);
 			Files.write(Paths.get(fileName), buffer.array());
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		}
 	}
 
@@ -278,7 +284,7 @@ public class DataHandler {
 		try {
 			new MatFileWriter(fileName, list);
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		}
 
 	}

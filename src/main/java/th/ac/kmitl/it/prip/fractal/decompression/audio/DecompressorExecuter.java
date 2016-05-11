@@ -5,11 +5,16 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import th.ac.kmitl.it.prip.fractal.DataHandler;
 import th.ac.kmitl.it.prip.fractal.Executer;
 
 public class DecompressorExecuter extends Executer {
+	private static final Logger LOGGER = Logger
+			.getLogger(DecompressorExecuter.class.getName());
+
 	private static void estimate() {
 		// estimate runtime
 		final String[] idsList = DataHandler.getIdsPathList(parameters);
@@ -73,7 +78,7 @@ public class DecompressorExecuter extends Executer {
 				Files.write(Paths.get(parameters.getOutdir(),
 						"\\decompresslog.txt"), logs);
 			} catch (IOException e) {
-				e.printStackTrace();
+				LOGGER.log(Level.SEVERE, e.getMessage());
 			}
 		}
 		System.out.println("Complete Exec");

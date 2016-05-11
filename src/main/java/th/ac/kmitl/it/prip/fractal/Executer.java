@@ -11,8 +11,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Executer {
+	private static final Logger LOGGER = Logger.getLogger(Executer.class
+			.getName());
 
 	protected static final String[] UNITS = { "", "k", "M", "G", "T", "P" };
 	protected static final int DELTA_TIME = 5000;
@@ -32,7 +36,7 @@ public class Executer {
 				parameter = br.readLine();
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		}
 		String[] result = new String[parametersList.size()];
 		for (int i = 0; i < parametersList.size(); i++) {
@@ -54,13 +58,12 @@ public class Executer {
 				in.close();
 				br.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				LOGGER.log(Level.SEVERE, e.getMessage());
 			}
 		}
 		// validate parameters
 		if (!parameters.isValidParams()) {
 			System.out.println("Incorrect parameters");
-			System.exit(0);
 		}
 	}
 
@@ -89,7 +92,7 @@ public class Executer {
 			Files.write(Paths.get(parameters.getOutdir(), "\\parameters.txt"),
 					Arrays.asList(inputParams));
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		}
 
 		// generate output

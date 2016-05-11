@@ -9,6 +9,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
@@ -17,6 +19,9 @@ import org.apache.commons.math3.fitting.WeightedObservedPoints;
 import th.ac.kmitl.it.prip.fractal.Parameters;
 
 public class Compressor {
+	private static final Logger LOGGER = Logger.getLogger(Compressor.class
+			.getName());
+
 	private Parameters parameters = null;
 	private float[] data = null;
 	private final int[] parts;
@@ -284,9 +289,9 @@ public class Compressor {
 						.stream().mapToDouble(i -> i).toArray();
 			}
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		} catch (ExecutionException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
 		} finally {
 			executorService.shutdown();
 		}
