@@ -1,12 +1,17 @@
 package th.ac.kmitl.it.prip.fractal.decompression.audio;
 
 import java.util.Arrays;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang3.ArrayUtils;
 
 import th.ac.kmitl.it.prip.fractal.Parameters;
 
 public class Decompressor {
+	private static final Logger LOGGER = Logger.getLogger(Decompressor.class
+			.getName());
+
 	private Parameters parameters = null;
 	private double[][] codes = null;
 	private int nParts;
@@ -27,7 +32,7 @@ public class Decompressor {
 		for (int i = 0; i < data.length; i++) {
 			nSamples += data[i][PART_SIZE_ELEMENT];
 		}
-		System.out.println("Decompressor constructor");
+		LOGGER.log(Level.FINE, "Decompressor constructor");
 	}
 
 	public double[] decompress() {
@@ -40,7 +45,7 @@ public class Decompressor {
 			// each code
 			int rbIdx = 0;
 			for (int fIdx = 0; fIdx < nParts; fIdx++) {
-				System.out.println("Part " + fIdx + " / " + nParts);
+				LOGGER.log(Level.INFO, "Part " + fIdx + " / " + nParts);
 				int bufferSize = (int) (codes[fIdx][PART_SIZE_ELEMENT] * parameters
 						.getAlpha());
 				double[] domain = new double[bufferSize

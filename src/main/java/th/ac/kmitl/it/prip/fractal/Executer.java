@@ -52,7 +52,7 @@ public class Executer {
 						new InputStreamReader(in));
 				String help = br.readLine();
 				while (help.length() > 0) {
-					System.out.println(help);
+					LOGGER.log(Level.INFO, help);
 					help = br.readLine();
 				}
 				in.close();
@@ -63,7 +63,7 @@ public class Executer {
 		}
 		// validate parameters
 		if (!parameters.isValidParams()) {
-			System.out.println("Incorrect parameters");
+			LOGGER.log(Level.INFO, "Incorrect parameters");
 		}
 	}
 

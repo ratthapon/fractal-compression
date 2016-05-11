@@ -46,19 +46,19 @@ public class DecompressorExecuter extends Executer {
 
 		for (int idsIdx = 0; idsIdx < idsList.length; idsIdx++) {
 			Decompressor decompressor;
-			System.out.println("Encall");
+			LOGGER.log(Level.FINE, "Encall");
 			double[][] codes = DataHandler.codesread(idsList[idsIdx],
 					parameters.getInExtension());
 			decompressor = new Decompressor(codes, parameters);
-			System.out.println("Create decompressor");
+			LOGGER.log(Level.FINE, "Create decompressor");
 			double[] audioData = decompressor.decompress();
-			System.out.println("Finish decompress");
+			LOGGER.log(Level.FINE, "Finish decompress");
 			// logging
 			timing.add(idsIdx, String.format("%d", decompressor.time()));
 			String log = "Decompressed " + idsIdx + " " + nameList[idsIdx]
 					+ " time " + decompressor.time() / 1000 + " sec";
 			logs.add(log);
-			System.out.println(log);
+			LOGGER.log(Level.INFO, log);
 
 			// store minimum value of self similarity
 			Paths.get(parameters.getOutdir(), "\\", nameList[idsIdx])
@@ -81,13 +81,13 @@ public class DecompressorExecuter extends Executer {
 				LOGGER.log(Level.SEVERE, e.getMessage());
 			}
 		}
-		System.out.println("Complete Exec");
+		LOGGER.log(Level.FINE, "Complete Exec");
 	}
 
 	public static void exec() {
 		readParameters();
-		System.out.println("Test name " + parameters.getTestName());
-		System.out.println(parameters.toString());
+		LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
+		LOGGER.log(Level.INFO, parameters.toString());
 		prepare();
 		estimate();
 		decompress();

@@ -69,7 +69,7 @@ public class DataHandler {
 			idsArrays = removeExtension(idsArrays);
 			for (int i = 0; i < idsArrays.length; i++) {
 				idsArrays[i] = Paths.get(idsArrays[i]).toString();
-				System.out.println(idsArrays[i]);
+				LOGGER.log(Level.INFO, idsArrays[i]);
 			}
 			return idsArrays;
 		} catch (IOException e) {

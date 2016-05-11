@@ -84,12 +84,12 @@ public class CompressorExecuter extends Executer {
 
 						@Override
 						public void run() {
-							System.out.println("Running " + " progress "
+							LOGGER.log(Level.INFO, "Running " + " progress "
 									+ compressor.countProcessedSamples() + "/"
 									+ compressor.getNSamples() + " part "
 									+ compressor.countProcessedParts() + "/"
 									+ compressor.getNParts());
-							System.out.println(" Speed " + samplesCompressSpeed
+							LOGGER.log(Level.INFO, " Speed " + samplesCompressSpeed
 									+ " samples/sec " + partsCompressSpeed
 									+ " parts/sec");
 						}
@@ -136,7 +136,7 @@ public class CompressorExecuter extends Executer {
 								+ compressor.getNParts() + " time "
 								+ compressor.time() / 1000 + " sec";
 						logs.add(log);
-						System.out.println(log);
+						LOGGER.log(Level.INFO, log);
 
 						// store minimum value of self similarity
 						Paths.get(parameters.getOutdir(), "\\",
@@ -169,8 +169,8 @@ public class CompressorExecuter extends Executer {
 
 	public static void exec() {
 		readParameters();
-		System.out.println("Test name " + parameters.getTestName());
-		System.out.println(parameters.toString());
+		LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
+		LOGGER.log(Level.INFO, parameters.toString());
 		if (parameters.isValidParams()) {
 			prepare();
 			estimate();
