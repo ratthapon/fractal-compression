@@ -1,11 +1,10 @@
 package th.ac.kmitl.it.prip.fractal.compression.audio;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -20,12 +19,10 @@ public class CompressorExecuter extends Executer {
 	private static final Logger LOGGER = Logger
 			.getLogger(CompressorExecuter.class.getName());
 
-	private static AtomicInteger processedSamples = new AtomicInteger(0);
-	private static AtomicInteger processedParts = new AtomicInteger(0);
-	private static AtomicInteger passedNSamples = new AtomicInteger(0);
-	private static AtomicInteger passedNParts = new AtomicInteger(0);
-	private static int samplesCompressSpeed; // samples per sec
-	private static int partsCompressSpeed; // parts per sec
+	public static AtomicInteger processedSamples = new AtomicInteger(0);
+	public static AtomicInteger processedParts = new AtomicInteger(0);
+	public static AtomicInteger passedNSamples = new AtomicInteger(0);
+	public static AtomicInteger passedNParts = new AtomicInteger(0);
 
 	private static void estimate() {
 		// estimate runtime
@@ -61,39 +58,7 @@ public class CompressorExecuter extends Executer {
 			for (int i = 0; i < idsList.length; i++) {
 				final int idsIdx = i;
 				compressorQueue.add(new Callable<double[][]>() {
-
 					private Compressor compressor;
-					private TimerTask estimateSpeed = new TimerTask() {
-
-						@Override
-						public void run() {
-							int processingSamples = processedSamples.get()
-									+ compressor.countProcessedSamples();
-							samplesCompressSpeed = (processingSamples - passedNSamples
-									.get()) / (DELTA_TIME / 1000);
-							passedNSamples.set(processingSamples);
-
-							int processingParts = processedParts.get()
-									+ compressor.countProcessedParts();
-							partsCompressSpeed = (processingParts - passedNParts
-									.get()) / (DELTA_TIME / 1000);
-							passedNParts.set(processingParts);
-						}
-					};
-					private TimerTask printState = new TimerTask() {
-
-						@Override
-						public void run() {
-							LOGGER.log(Level.INFO, "Running " + " progress "
-									+ compressor.countProcessedSamples() + "/"
-									+ compressor.getNSamples() + " part "
-									+ compressor.countProcessedParts() + "/"
-									+ compressor.getNParts());
-							LOGGER.log(Level.INFO, " Speed "
-									+ samplesCompressSpeed + " samples/sec "
-									+ partsCompressSpeed + " parts/sec");
-						}
-					};
 
 					@Override
 					public double[][] call() throws Exception {
@@ -101,63 +66,16 @@ public class CompressorExecuter extends Executer {
 								idsList[idsIdx], parameters.getInExtension());
 						compressor = new Compressor(inputAudioData, parameters);
 
-						// start speed estimation
-						Timer speedEstimator = new Timer();
-						speedEstimator.scheduleAtFixedRate(estimateSpeed, 0,
-								DELTA_TIME);
-
-						// progress report
-						Timer printTimer = null;
-						if (parameters.getProgressReportRate() > 0) {
-							printTimer = new Timer();
-							printTimer.scheduleAtFixedRate(printState, 0,
-									parameters.getProgressReportRate());
-						}
-
 						// process compressor
 						double[][] codes = compressor.compress();
-						processedSamples.addAndGet(compressor
-								.countProcessedSamples());
-						processedParts.addAndGet(compressor
-								.countProcessedParts());
-						speedEstimator.cancel();
-						if (printTimer != null) {
-							printTimer.cancel();
-						}
 
 						// logging
-						timing.add(idsIdx,
-								String.format("%d", compressor.time()));
-						String log = "Compressed " + idsIdx + " "
-								+ nameList[idsIdx] + " progress "
-								+ compressor.countProcessedSamples() + "/"
-								+ compressor.getNSamples() + " part "
-								+ compressor.countProcessedParts() + "/"
-								+ compressor.getNParts() + " time "
-								+ compressor.time() / 1000 + " sec";
-						logs.add(log);
-						LOGGER.log(Level.INFO, log);
-
+						writeLogs(compressor, idsIdx, nameList, timing, logs);
 						// store minimum value of self similarity
-						Paths.get(parameters.getOutdir(), "\\",
-								nameList[idsIdx]).getParent().toFile().mkdirs();
-						String codeFilePath = Paths.get(parameters.getOutdir(),
-								"\\", nameList[idsIdx]).toString();
-						DataHandler.writecode(codeFilePath, codes,
-								parameters.getOutExtension());
-						codePathList.add(codeFilePath + "."
-								+ parameters.getOutExtension());
-
-						Files.write(Paths.get(parameters.getOutdir(),
-								"\\codelist.txt"), codePathList);
-						Files.write(Paths.get(parameters.getOutdir(),
-								"\\timing.txt"), timing);
-						Files.write(Paths.get(parameters.getOutdir(),
-								"\\compresslog.txt"), logs);
+						writeFractalCode(idsIdx, codes, nameList, codePathList);
 						return codes;
 					}
 				});
-
 			}
 			executorService.invokeAll(compressorQueue);
 		} catch (InterruptedException e) {
@@ -176,6 +94,39 @@ public class CompressorExecuter extends Executer {
 			estimate();
 			compress();
 		}
+	}
+
+	private static void writeFractalCode(final int idsIdx, double[][] codes,
+			final String[] nameList, List<String> codePathList)
+			throws IOException {
+		// store minimum value of self similarity
+		Paths.get(parameters.getOutdir(), "\\", nameList[idsIdx]).getParent()
+				.toFile().mkdirs();
+		String codeFilePath = Paths.get(parameters.getOutdir(), "\\",
+				nameList[idsIdx]).toString();
+		DataHandler
+				.writecode(codeFilePath, codes, parameters.getOutExtension());
+		codePathList.add(codeFilePath + "." + parameters.getOutExtension());
+		Files.write(Paths.get(parameters.getOutdir(), "\\codelist.txt"),
+				codePathList);
+	}
+
+	private static void writeLogs(Compressor compressor, final int idsIdx,
+			final String[] nameList, List<String> timing, List<String> logs)
+			throws IOException {
+		// logging
+		timing.add(idsIdx, String.format("%d", compressor.time()));
+		String log = "Compressed " + idsIdx + " " + nameList[idsIdx]
+				+ " progress " + compressor.countProcessedSamples() + "/"
+				+ compressor.getNSamples() + " part "
+				+ compressor.countProcessedParts() + "/"
+				+ compressor.getNParts() + " time " + compressor.time() / 1000
+				+ " sec";
+		logs.add(log);
+		LOGGER.log(Level.INFO, log);
+		Files.write(Paths.get(parameters.getOutdir(), "\\timing.txt"), timing);
+		Files.write(Paths.get(parameters.getOutdir(), "\\compresslog.txt"),
+				logs);
 	}
 
 	private CompressorExecuter() {

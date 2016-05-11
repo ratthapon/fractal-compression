@@ -3,6 +3,8 @@ package th.ac.kmitl.it.prip.fractal.compression.audio;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -16,6 +18,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
 
+import th.ac.kmitl.it.prip.fractal.Executer;
 import th.ac.kmitl.it.prip.fractal.Parameters;
 
 public class Compressor {
@@ -32,6 +35,39 @@ public class Compressor {
 	private long initTime;
 	private long completeTime;
 	private boolean isDone = false;
+
+	private static int samplesCompressSpeed; // samples per sec
+	private static int partsCompressSpeed; // parts per sec
+
+	private TimerTask estimateSpeed = new TimerTask() {
+
+		@Override
+		public void run() {
+
+			int processingSamples = CompressorExecuter.processedSamples.get()
+					+ countProcessedSamples();
+			samplesCompressSpeed = (processingSamples - CompressorExecuter.passedNSamples
+					.get()) / (Executer.DELTA_TIME / 1000);
+			CompressorExecuter.passedNSamples.set(processingSamples);
+
+			int processingParts = CompressorExecuter.processedParts.get()
+					+ countProcessedParts();
+			partsCompressSpeed = (processingParts - CompressorExecuter.passedNParts
+					.get()) / (Executer.DELTA_TIME / 1000);
+			CompressorExecuter.passedNParts.set(processingParts);
+		}
+	};
+	private TimerTask printState = new TimerTask() {
+
+		@Override
+		public void run() {
+			LOGGER.log(Level.INFO, "Running " + " progress "
+					+ countProcessedSamples() + "/" + getNSamples() + " part "
+					+ countProcessedParts() + "/" + getNParts());
+			LOGGER.log(Level.INFO, " Speed " + samplesCompressSpeed
+					+ " samples/sec " + partsCompressSpeed + " parts/sec");
+		}
+	};
 
 	public Compressor(float[] inputAudioData, Parameters compressParameters) {
 		parameters = compressParameters;
@@ -162,6 +198,10 @@ public class Compressor {
 	public double[][] compress() {
 		final int nCoeff = parameters.getNCoeff();
 		double[][] code = new double[nParts][nCoeff + 3];
+
+		Timer speedEstimator = new Timer();
+		Timer printTimer = null;
+
 		ExecutorService executorService = Executors
 				.newWorkStealingPool(parameters.getMaxParallelProcess());
 		List<Callable<float[]>> rangeTask = new ArrayList<Callable<float[]>>();
@@ -180,97 +220,8 @@ public class Compressor {
 			rangeTask.add(new Callable<float[]>() {
 
 				public float[] call() throws Exception {
-					float[] codeChunk = new float[nCoeff + 3];
-					float bestR = Float.POSITIVE_INFINITY;
-					// block y
-					float[] b = Arrays
-							.copyOfRange(data, bColStart, bColEnd + 1);
-
-					// search similarity matched domain form entire data
-					for (int dbIdx = 0; dbIdx < nSamples - rangeBlockSize
-							* parameters.getDomainScale() - 1; dbIdx += parameters
-							.getDStep()) {
-
-						// locate test domain
-						int dColStart = dbIdx;
-						int dColEnd = dbIdx + rangeBlockSize
-								* parameters.getDomainScale() - 1;
-						// input x
-						float[] d = Arrays.copyOfRange(data, dColStart,
-								dColEnd + 1);
-
-						// reduce to half size
-						float[] a = resample(d);
-						for (int rev = 0; rev <= 1; rev++) {
-							if (rev == 1) {
-								float[] reverseA = new float[a.length];
-								for (int i = 0; i < a.length; i++) {
-									reverseA[i] = a[a.length - i - 1];
-								}
-								a = reverseA;
-							}
-							WeightedObservedPoints obs = new WeightedObservedPoints();
-							for (int i = 0; i < a.length; i++) {
-								obs.add(a[i], b[i]);
-							}
-							// Instantiate a n-degree polynomial fitter.
-							PolynomialCurveFitter fitter = PolynomialCurveFitter
-									.create(nCoeff - 1);
-							// Retrieve fitted parameters (coefficients of the
-							// polynomial function).
-							double[] tempCoeff = fitter.fit(obs.toList());
-							float[] coeff = new float[nCoeff];
-							for (int i = 0; i < tempCoeff.length; i++) {
-								coeff[i] = (float) tempCoeff[i];
-							}
-
-							// limit coefficient
-							float maxCoeff = parameters.getCoeffLimit();
-							if ((tempCoeff[1] > maxCoeff || tempCoeff[1] < -maxCoeff)
-									&& nCoeff == 2) {
-								if (tempCoeff[1] > maxCoeff) {
-									coeff[1] = maxCoeff;
-								} else if (tempCoeff[1] < -maxCoeff) {
-									coeff[1] = -maxCoeff;
-								}
-								double suma = Arrays
-										.asList(ArrayUtils.toObject(a))
-										.stream().mapToDouble(i -> i).sum();
-								double sumb = Arrays
-										.asList(ArrayUtils.toObject(b))
-										.stream().mapToDouble(i -> i).sum();
-								coeff[0] = (float) ((sumb - coeff[1] * suma) / a.length);
-
-							}
-
-							// evaluate sum square error
-							float sumSqrError = 0f;
-							for (int j = 0; j < a.length; j++) {
-								sumSqrError += Math.pow(((a[j] * coeff[1]) + coeff[0]) - b[j], 2);
-							}
-
-							if (bestR > sumSqrError) { // found self
-								// parameters that
-								// less than stored parameter s
-								bestR = sumSqrError;
-								// store minimum value of self similarity
-								for (int i = 0; i < nCoeff; i++) {
-									codeChunk[i] = coeff[i];
-								}
-								// set domain index
-								codeChunk[nCoeff] = (float) (dbIdx + 1);
-								if (rev == 1) {
-									codeChunk[nCoeff] = -(float) (dbIdx + 1);
-								}
-
-								// set range block size
-								codeChunk[nCoeff + 1] = rangeBlockSize;
-								// range block size boundary
-								codeChunk[nCoeff + 2] = rangeIdx;
-								// domain scale
-							}
-						}
-					}
+					float[] codeChunk = getContractCoeff(rangeIdx, nCoeff,
+							rangeBlockSize, bColStart, bColEnd);
 					partProgress.addAndGet(1);
 					samplesProgress.addAndGet(rangeBlockSize);
 					return codeChunk; // code of each range block
@@ -279,9 +230,22 @@ public class Compressor {
 		}
 		try {
 			initTime = System.currentTimeMillis();
+
+			// start speed estimation
+			speedEstimator.scheduleAtFixedRate(estimateSpeed, 0,
+					Executer.DELTA_TIME);
+
+			// progress report
+			if (parameters.getProgressReportRate() > 0) {
+				printTimer = new Timer();
+				printTimer.scheduleAtFixedRate(printState, 0,
+						parameters.getProgressReportRate());
+			}
+
 			List<Future<float[]>> futures = executorService
 					.invokeAll(rangeTask);
 			completeTime = System.currentTimeMillis();
+
 			for (int c = 0; c < futures.size(); c++) {
 				Future<float[]> future = futures.get(c);
 				// store minimum code value of self similarity
@@ -296,7 +260,33 @@ public class Compressor {
 			executorService.shutdown();
 		}
 		isDone = true;
+
+		CompressorExecuter.processedSamples.addAndGet(countProcessedSamples());
+		CompressorExecuter.processedParts.addAndGet(countProcessedParts());
+		speedEstimator.cancel();
+		if (printTimer != null) {
+			printTimer.cancel();
+		}
 		return code; // code of each file
+	}
+
+	private float computeSumSqrError(float[] b, float[] a, float[] coeff) {
+		float sumSqrError = 0f;
+		for (int j = 0; j < a.length; j++) {
+			sumSqrError += Math.pow(((a[j] * coeff[1]) + coeff[0]) - b[j], 2);
+		}
+		return sumSqrError;
+	}
+
+	private float[] reverseBlock(float[] a, int rev) {
+		if (rev == 1) {
+			float[] reverseA = new float[a.length];
+			for (int i = 0; i < a.length; i++) {
+				reverseA[i] = a[a.length - i - 1];
+			}
+			a = reverseA;
+		}
+		return a;
 	}
 
 	private float[] resample(float[] d) {
@@ -333,6 +323,109 @@ public class Compressor {
 
 	public boolean isDone() {
 		return isDone;
+	}
+
+	private float[] limitCoeff(final int nCoeff, float[] b, float[] a,
+			double[] tempCoeff) {
+		float[] coeff = new float[nCoeff];
+		for (int i = 0; i < tempCoeff.length; i++) {
+			coeff[i] = (float) tempCoeff[i];
+		}
+
+		// limit coefficient
+		float maxCoeff = parameters.getCoeffLimit();
+		if ((tempCoeff[1] > maxCoeff || tempCoeff[1] < -maxCoeff)
+				&& nCoeff == 2) {
+			if (tempCoeff[1] > maxCoeff) {
+				coeff[1] = maxCoeff;
+			} else if (tempCoeff[1] < -maxCoeff) {
+				coeff[1] = -maxCoeff;
+			}
+			double suma = Arrays.asList(ArrayUtils.toObject(a)).stream()
+					.mapToDouble(i -> i).sum();
+			double sumb = Arrays.asList(ArrayUtils.toObject(b)).stream()
+					.mapToDouble(i -> i).sum();
+			coeff[0] = (float) ((sumb - coeff[1] * suma) / a.length);
+
+		}
+		return coeff;
+	}
+
+	private float[] composeCode(final int nCoeff, final float rangeIdx,
+			final int rangeBlockSize, int dbIdx, int rev, float[] coeff) {
+		float[] codeChunk = new float[nCoeff + 3];
+		// store minimum value of self similarity
+		for (int i = 0; i < nCoeff; i++) {
+			codeChunk[i] = coeff[i];
+		}
+		// set domain index
+		codeChunk[nCoeff] = (float) (dbIdx + 1);
+		if (rev == 1) {
+			codeChunk[nCoeff] = -(float) (dbIdx + 1);
+		}
+
+		// set range block size
+		codeChunk[nCoeff + 1] = rangeBlockSize;
+		// range block size boundary
+		codeChunk[nCoeff + 2] = rangeIdx;
+		// domain scale
+		return codeChunk;
+	}
+
+	private float[] extractCoeff(final int nCoeff, float[] b, float[] a) {
+		WeightedObservedPoints obs = new WeightedObservedPoints();
+		for (int i = 0; i < a.length; i++) {
+			obs.add(a[i], b[i]);
+		}
+		// Instantiate a n-degree polynomial fitter.
+		PolynomialCurveFitter fitter = PolynomialCurveFitter.create(nCoeff - 1);
+		// Retrieve fitted parameters (coefficients of the
+		// polynomial function).
+		double[] tempCoeff = fitter.fit(obs.toList());
+		float[] coeff = limitCoeff(nCoeff, b, a, tempCoeff);
+		return coeff;
+	}
+
+	private float[] getDomainBlock(final int rangeBlockSize, int dbIdx) {
+		// locate test domain
+		int dColStart = dbIdx;
+		int dColEnd = dbIdx + rangeBlockSize * parameters.getDomainScale() - 1;
+		// input x
+		float[] d = Arrays.copyOfRange(data, dColStart, dColEnd + 1);
+		return d;
+	}
+
+	private float[] getContractCoeff(final float rangeIdx, final int nCoeff,
+			final int rangeBlockSize, final int bColStart, final int bColEnd) {
+		float[] codeChunk = new float[nCoeff + 3];
+		float bestR = Float.POSITIVE_INFINITY;
+		float[] b = Arrays.copyOfRange(data, bColStart, bColEnd + 1);
+
+		// search similarity matched domain form entire data
+		for (int dbIdx = 0; dbIdx < nSamples - rangeBlockSize
+				* parameters.getDomainScale() - 1; dbIdx += parameters
+				.getDStep()) {
+			// get domain block
+			float[] d = getDomainBlock(rangeBlockSize, dbIdx);
+			// reduce to half size
+			float[] a = resample(d);
+			for (int rev = 0; rev <= 1; rev++) {
+				a = reverseBlock(a, rev);
+				float[] coeff = extractCoeff(nCoeff, b, a);
+
+				// evaluate sum square error
+				float sumSqrError = computeSumSqrError(b, a, coeff);
+
+				if (bestR > sumSqrError) { // found self
+					// parameters that
+					// less than stored parameter s
+					bestR = sumSqrError;
+					codeChunk = composeCode(nCoeff, rangeIdx, rangeBlockSize,
+							dbIdx, rev, coeff);
+				}
+			}
+		}
+		return codeChunk;
 	}
 
 }

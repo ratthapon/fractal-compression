@@ -19,7 +19,7 @@ public abstract class Executer {
 			.getName());
 
 	protected static final String[] UNITS = { "", "k", "M", "G", "T", "P" };
-	protected static final int DELTA_TIME = 5000;
+	public static final int DELTA_TIME = 5000;
 	protected static Parameters parameters;
 	private static String[] inputParams;
 	protected static int nSamples = 0;
