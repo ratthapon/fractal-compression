@@ -15,9 +15,8 @@ public class MainExecuter {
 			}
 
 		} else {
-
+			CompressorExecuter.exec();
 		}
-
 	}
 
 	private MainExecuter() {
