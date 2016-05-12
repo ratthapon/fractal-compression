@@ -12,10 +12,6 @@ public class MainExecuter {
 			case "-c":
 				CompressorExecuter.exec();
 				break;
-			case "d":
-			case "-d":
-				// DecompressorExecuter.exec();
-				break;
 			}
 
 		} else {
