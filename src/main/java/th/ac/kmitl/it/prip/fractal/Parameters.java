@@ -69,7 +69,7 @@ public class Parameters {
 						arg.length());
 				setParameter(argName, argValue);
 			} catch (IndexOutOfBoundsException e) {
-				if (arg.equalsIgnoreCase("help")) {
+				if ("help".equalsIgnoreCase(arg)) {
 					setParameter("help", "");
 				} else {
 					// skip fault value
