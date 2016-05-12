@@ -232,8 +232,8 @@ public class DataHandler {
 				ais.read(audioBytes);
 				double leftChannel = ((audioBytes[0] & 0xFF) | (audioBytes[1] << 8)) / 32768.0;
 				if (leftChannel < 1) {
-					audioData[frameIdx] = (float) (((leftChannel)) * Math.pow(
-							2, 15));
+					audioData[frameIdx] = (float) (leftChannel * Math
+							.pow(2, 15));
 				}
 				frameIdx += 1;
 			}
