@@ -7,9 +7,9 @@ public class MainExecuter {
 	public static void main(String[] args) {
 		if (args.length > 0) {
 			switch (args[0].toLowerCase()) {
-			default:
 			case "c":
 			case "-c":
+			default:
 				CompressorExecuter.exec();
 				break;
 			}
