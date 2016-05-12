@@ -219,7 +219,7 @@ public class Compressor {
 			// parallel range mapping : queuing phase
 			rangeTask.add(new Callable<float[]>() {
 
-				public float[] call() throws Exception {
+				public float[] call() {
 					float[] codeChunk = getContractCoeff(rangeIdx, nCoeff,
 							rangeBlockSize, bColStart, bColEnd);
 					partProgress.addAndGet(1);
