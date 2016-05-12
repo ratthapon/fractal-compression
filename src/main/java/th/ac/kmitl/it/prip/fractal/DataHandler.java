@@ -259,6 +259,8 @@ public class DataHandler {
 
 	@SuppressWarnings("unused")
 	private static double[][] binToCodes(String fileName) {
+		LOGGER.log(Level.WARNING, "Can not open " + fileName
+				+ ". This api does not implement yet.");
 		return new double[0][0];
 	}
 
