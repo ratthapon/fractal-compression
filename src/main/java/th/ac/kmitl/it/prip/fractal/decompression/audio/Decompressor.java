@@ -59,23 +59,14 @@ public class Decompressor {
 					ArrayUtils.reverse(domain);
 				}
 
-				double[] buffer = new double[bufferSize];
-				for (int i = 0; i < buffer.length; i++) {
-					for (int coeffOrder = 0; coeffOrder < nCoeff; coeffOrder++) {
-						buffer[i] += codes[fIdx][coeffOrder]
-								* Math.pow(domain[i], coeffOrder);
-					}
-				}
+				double[] buffer = interpolateBlock(domain, fIdx, nCoeff,
+						bufferSize);
 				for (int i = 0; i < buffer.length; i++) {
 					bufferAudioData[rbIdx + i] = buffer[i];
 				}
 				rbIdx += bufferSize;
 			}
-			if (ArrayUtils.contains(bufferAudioData, Float.NaN)
-					|| ArrayUtils.contains(bufferAudioData,
-							Float.POSITIVE_INFINITY)
-					|| ArrayUtils.contains(bufferAudioData,
-							Float.NEGATIVE_INFINITY)) {
+			if (isInvalidReconstructed(bufferAudioData)) {
 				completeTime = System.currentTimeMillis();
 				isDone = true;
 				return audioData;
@@ -86,6 +77,26 @@ public class Decompressor {
 		completeTime = System.currentTimeMillis();
 		isDone = true;
 		return audioData;
+	}
+
+	private double[] interpolateBlock(double[] domain, int fIdx,
+			final int nCoeff, int bufferSize) {
+		double[] buffer = new double[bufferSize];
+		for (int i = 0; i < buffer.length; i++) {
+			for (int coeffOrder = 0; coeffOrder < nCoeff; coeffOrder++) {
+				buffer[i] += codes[fIdx][coeffOrder]
+						* Math.pow(domain[i], coeffOrder);
+			}
+		}
+		return buffer;
+	}
+
+	private boolean isInvalidReconstructed(double[] bufferAudioData) {
+		return ArrayUtils.contains(bufferAudioData, Float.NaN)
+				|| ArrayUtils
+						.contains(bufferAudioData, Float.POSITIVE_INFINITY)
+				|| ArrayUtils
+						.contains(bufferAudioData, Float.NEGATIVE_INFINITY);
 	}
 
 	private double[] resample(double[] domain) {
