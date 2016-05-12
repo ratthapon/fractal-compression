@@ -27,12 +27,11 @@ public class DecompressorExecuter extends Executer {
 		}
 		int samplesUnit = (int) (Math.log10(nSamples) / 3);
 		int partsUnit = (int) (Math.log10(nParts) / 3);
-		System.out
-				.println(String.format("Expect %d %s samples %d %s parts",
-						(int) (nSamples / Math.pow(10, samplesUnit * 3)),
-						UNITS[samplesUnit],
-						(int) (nParts / Math.pow(10, partsUnit * 3)),
-						UNITS[partsUnit]));
+		LOGGER.log(Level.INFO, String.format(
+				"Expect %d %s samples %d %s parts",
+				(int) (nSamples / Math.pow(10, samplesUnit * 3)),
+				UNITS[samplesUnit],
+				(int) (nParts / Math.pow(10, partsUnit * 3)), UNITS[partsUnit]));
 	}
 
 	private static void decompress() {
