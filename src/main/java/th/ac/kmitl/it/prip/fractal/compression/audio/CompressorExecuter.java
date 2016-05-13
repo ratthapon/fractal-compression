@@ -12,11 +12,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
-
 import th.ac.kmitl.it.prip.fractal.DataHandler;
 import th.ac.kmitl.it.prip.fractal.Executer;
-import th.ac.kmitl.it.prip.fractal.Parameters.ProcessName;
 
 public class CompressorExecuter extends Executer {
 	private static final Logger LOGGER = Logger
@@ -27,23 +24,18 @@ public class CompressorExecuter extends Executer {
 	private static AtomicInteger passedNSamples = new AtomicInteger(0);
 	private static AtomicInteger passedNParts = new AtomicInteger(0);
 
-	private static void compress() throws IOException, InterruptedException {
+	protected static void process() throws IOException, InterruptedException {
 		String[] idsList;
-		try {
-			idsList = DataHandler.getIdsPathList(parameters);
-		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "Can not open file paths list : "
-					+ parameters.getInPathPrefix());
-			throw e;
-		}
 		String[] nameList;
 		try {
+			idsList = DataHandler.getIdsPathList(parameters);
 			nameList = DataHandler.getIdsNameList(parameters);
 		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "Can not open file names list : "
-					+ parameters.getInfile());
+			LOGGER.log(Level.SEVERE,
+					"Can not open file list : " + parameters.getInPathPrefix());
 			throw e;
 		}
+
 		List<String> codePathList = new ArrayList<String>();
 		List<String> timing = new ArrayList<String>();
 		List<String> logs = new ArrayList<String>();
@@ -80,24 +72,6 @@ public class CompressorExecuter extends Executer {
 			throw e;
 		} finally {
 			executorService.shutdown();
-		}
-	}
-
-	public static void exec() throws IOException,
-			UnsupportedAudioFileException, InterruptedException {
-		try {
-			readParameters();
-			LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
-			LOGGER.log(Level.INFO, parameters.toString());
-			if (parameters.isValidParams()) {
-				prepare();
-				estimate(ProcessName.COMPRESS);
-				compress();
-			}
-		} catch (IOException | UnsupportedAudioFileException
-				| InterruptedException e) {
-			LOGGER.info(e.getMessage());
-			throw e;
 		}
 	}
 

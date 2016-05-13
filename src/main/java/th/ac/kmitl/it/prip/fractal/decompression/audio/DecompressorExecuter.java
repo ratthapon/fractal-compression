@@ -8,32 +8,22 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
-
 import th.ac.kmitl.it.prip.fractal.DataHandler;
 import th.ac.kmitl.it.prip.fractal.Executer;
-import th.ac.kmitl.it.prip.fractal.Parameters.ProcessName;
 
 public class DecompressorExecuter extends Executer {
 	private static final Logger LOGGER = Logger
 			.getLogger(DecompressorExecuter.class.getName());
 
-
-	private static void decompress() throws IOException {
+	protected static void process() throws IOException {
 		String[] idsList;
-		try {
-			idsList = DataHandler.getIdsPathList(parameters);
-		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "Can not open file paths list : "
-					+ parameters.getInPathPrefix());
-			throw e;
-		}
 		String[] nameList;
 		try {
+			idsList = DataHandler.getIdsPathList(parameters);
 			nameList = DataHandler.getIdsNameList(parameters);
 		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE, "Can not open file names list : "
-					+ parameters.getInfile());
+			LOGGER.log(Level.SEVERE,
+					"Can not open file list : " + parameters.getInPathPrefix());
 			throw e;
 		}
 		List<String> audioPathList = new ArrayList<String>();
@@ -81,20 +71,6 @@ public class DecompressorExecuter extends Executer {
 			}
 		}
 		LOGGER.log(Level.FINE, "Complete Exec");
-	}
-
-	public static void exec() throws IOException, UnsupportedAudioFileException {
-		try {
-			readParameters();
-			LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
-			LOGGER.log(Level.INFO, parameters.toString());
-			prepare();
-			estimate(ProcessName.DECOMPRESS);
-			decompress();
-		} catch (IOException e) {
-			LOGGER.info(e.getMessage());
-			throw e;
-		}
 	}
 
 	private DecompressorExecuter() {

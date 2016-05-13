@@ -154,6 +154,27 @@ public abstract class Executer {
 				(int) (nParts / Math.pow(10, partsUnit * 3)), UNITS[partsUnit]));
 	}
 
+	public static void exec() throws IOException,
+			UnsupportedAudioFileException, InterruptedException {
+		try {
+			readParameters();
+			LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
+			LOGGER.log(Level.INFO, parameters.toString());
+			if (parameters.isValidParams()) {
+				prepare();
+				estimate(null);
+				process();
+			}
+		} catch (IOException | UnsupportedAudioFileException
+				| InterruptedException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
+		}
+	}
+
+	protected static void process() throws IOException, InterruptedException {
+	}
+
 	protected Executer() {
 	}
 }
