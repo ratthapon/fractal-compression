@@ -14,6 +14,12 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.sound.sampled.UnsupportedAudioFileException;
+
+import th.ac.kmitl.it.prip.fractal.Parameters.ProcessName;
+import th.ac.kmitl.it.prip.fractal.compression.audio.Compressor;
+import th.ac.kmitl.it.prip.fractal.decompression.audio.Decompressor;
+
 public abstract class Executer {
 	private static final Logger LOGGER = Logger.getLogger(Executer.class
 			.getName());
@@ -25,7 +31,7 @@ public abstract class Executer {
 	protected static int nSamples = 0;
 	protected static int nParts = 0;
 
-	protected static void readParameters() {
+	protected static void readParameters() throws IOException {
 		List<String> parametersList = new ArrayList<>();
 		try {
 			BufferedReader br = new BufferedReader(new InputStreamReader(
@@ -37,6 +43,7 @@ public abstract class Executer {
 			}
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 		String[] result = new String[parametersList.size()];
 		for (int i = 0; i < parametersList.size(); i++) {
@@ -59,6 +66,7 @@ public abstract class Executer {
 				br.close();
 			} catch (IOException e) {
 				LOGGER.log(Level.SEVERE, e.getMessage());
+				throw e;
 			}
 		}
 		// validate parameters
@@ -74,7 +82,7 @@ public abstract class Executer {
 		// remove output
 	}
 
-	protected static void prepare() {
+	protected static void prepare() throws IOException {
 		// generate output directory
 		Paths.get(parameters.getOutdir()).toFile().mkdirs();
 
@@ -93,9 +101,57 @@ public abstract class Executer {
 					Arrays.asList(inputParams));
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 
 		// generate output
+	}
+
+	protected static void estimate(ProcessName processName) throws IOException,
+			UnsupportedAudioFileException {
+		// estimate runtime
+		String[] idsList = null;
+		try {
+			idsList = DataHandler.getIdsPathList(parameters);
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE,
+					"Can not open files list : " + parameters.getInfile());
+			throw e;
+		}
+		for (int i = 0; i < idsList.length; i++) {
+			try {
+				if (processName.equals(ProcessName.COMPRESS)) {
+					float[] inputAudioData = DataHandler.audioread(idsList[i],
+							parameters.getInExtension());
+					Compressor compressor = new Compressor(inputAudioData,
+							parameters);
+					nSamples += compressor.getNSamples();
+					nParts += compressor.getNParts();
+				} else if (processName.equals(ProcessName.DECOMPRESS)) {
+					double[][] codes = DataHandler.codesread(idsList[i],
+							parameters.getInExtension());
+					Decompressor decompressor = new Decompressor(codes,
+							parameters);
+					nSamples += decompressor.getNSamples();
+					nParts += decompressor.getNParts();
+				}
+
+			} catch (UnsupportedAudioFileException e) {
+				LOGGER.log(Level.SEVERE, "Unsupport audio file extension : "
+						+ parameters.getInExtension());
+				throw e;
+			} catch (IOException e) {
+				LOGGER.log(Level.SEVERE, "File read error : " + idsList[i]);
+				throw e;
+			}
+		}
+		int samplesUnit = (int) (Math.log10(nSamples) / 3);
+		int partsUnit = (int) (Math.log10(nParts) / 3);
+		LOGGER.log(Level.INFO, String.format(
+				"Expect %d %s samples %d %s parts",
+				(int) (nSamples / Math.pow(10, samplesUnit * 3)),
+				UNITS[samplesUnit],
+				(int) (nParts / Math.pow(10, partsUnit * 3)), UNITS[partsUnit]));
 	}
 
 	protected Executer() {

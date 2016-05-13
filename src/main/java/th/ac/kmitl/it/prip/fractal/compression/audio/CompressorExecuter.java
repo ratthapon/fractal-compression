@@ -12,8 +12,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.sound.sampled.UnsupportedAudioFileException;
+
 import th.ac.kmitl.it.prip.fractal.DataHandler;
 import th.ac.kmitl.it.prip.fractal.Executer;
+import th.ac.kmitl.it.prip.fractal.Parameters.ProcessName;
 
 public class CompressorExecuter extends Executer {
 	private static final Logger LOGGER = Logger
@@ -24,28 +27,23 @@ public class CompressorExecuter extends Executer {
 	private static AtomicInteger passedNSamples = new AtomicInteger(0);
 	private static AtomicInteger passedNParts = new AtomicInteger(0);
 
-	private static void estimate() {
-		// estimate runtime
-		final String[] idsList = DataHandler.getIdsPathList(parameters);
-		for (int i = 0; i < idsList.length; i++) {
-			float[] inputAudioData = DataHandler.audioread(idsList[i],
-					parameters.getInExtension());
-			Compressor compressor = new Compressor(inputAudioData, parameters);
-			nSamples += compressor.getNSamples();
-			nParts += compressor.getNParts();
+	private static void compress() throws IOException, InterruptedException {
+		String[] idsList;
+		try {
+			idsList = DataHandler.getIdsPathList(parameters);
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "Can not open file paths list : "
+					+ parameters.getInPathPrefix());
+			throw e;
 		}
-		int samplesUnit = (int) (Math.log10(nSamples) / 3);
-		int partsUnit = (int) (Math.log10(nParts) / 3);
-		LOGGER.log(Level.INFO, String.format(
-				"Expect %d %s samples %d %s parts",
-				(int) (nSamples / Math.pow(10, samplesUnit * 3)),
-				UNITS[samplesUnit],
-				(int) (nParts / Math.pow(10, partsUnit * 3)), UNITS[partsUnit]));
-	}
-
-	private static void compress() {
-		final String[] idsList = DataHandler.getIdsPathList(parameters);
-		final String[] nameList = DataHandler.getIdsNameList(parameters);
+		String[] nameList;
+		try {
+			nameList = DataHandler.getIdsNameList(parameters);
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "Can not open file names list : "
+					+ parameters.getInfile());
+			throw e;
+		}
 		List<String> codePathList = new ArrayList<String>();
 		List<String> timing = new ArrayList<String>();
 		List<String> logs = new ArrayList<String>();
@@ -79,19 +77,27 @@ public class CompressorExecuter extends Executer {
 			executorService.invokeAll(compressorQueue);
 		} catch (InterruptedException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		} finally {
 			executorService.shutdown();
 		}
 	}
 
-	public static void exec() {
-		readParameters();
-		LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
-		LOGGER.log(Level.INFO, parameters.toString());
-		if (parameters.isValidParams()) {
-			prepare();
-			estimate();
-			compress();
+	public static void exec() throws IOException,
+			UnsupportedAudioFileException, InterruptedException {
+		try {
+			readParameters();
+			LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
+			LOGGER.log(Level.INFO, parameters.toString());
+			if (parameters.isValidParams()) {
+				prepare();
+				estimate(ProcessName.COMPRESS);
+				compress();
+			}
+		} catch (IOException | UnsupportedAudioFileException
+				| InterruptedException e) {
+			LOGGER.info(e.getMessage());
+			throw e;
 		}
 	}
 

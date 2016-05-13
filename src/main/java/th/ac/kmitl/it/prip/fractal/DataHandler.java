@@ -41,12 +41,15 @@ public class DataHandler {
 	 * @param fileIds
 	 *            input file that store paths of audio data
 	 * @return audio paths
+	 * @throws IOException
 	 */
-	public static String[] getIdsPathList(Parameters parameters) {
+	public static String[] getIdsPathList(Parameters parameters)
+			throws IOException {
+		String[] idsArrays = new String[0];
 		try {
 			List<String> idsList = Files.readAllLines(Paths.get(parameters
 					.getInfile()));
-			String[] idsArrays = new String[idsList.size()];
+			idsArrays = new String[idsList.size()];
 			idsList.toArray(idsArrays);
 			idsArrays = removeExtension(idsArrays);
 			for (int i = 0; i < idsArrays.length; i++) {
@@ -59,33 +62,35 @@ public class DataHandler {
 				}
 
 			}
-			return idsArrays;
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
-			return new String[0];
+			throw e;
 		}
+		return idsArrays;
 	}
 
-	public static String[] getIdsNameList(Parameters parameters) {
+	public static String[] getIdsNameList(Parameters parameters)
+			throws IOException {
+		String[] idsArrays = new String[0];
 		try {
 			List<String> idsList = Files.readAllLines(Paths.get(parameters
 					.getInfile()));
-			String[] idsArrays = new String[idsList.size()];
+			idsArrays = new String[idsList.size()];
 			idsList.toArray(idsArrays);
 			idsArrays = removeExtension(idsArrays);
 			for (int i = 0; i < idsArrays.length; i++) {
 				idsArrays[i] = Paths.get(idsArrays[i]).toString();
 				LOGGER.log(Level.INFO, idsArrays[i]);
 			}
-			return idsArrays;
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
-			return new String[0];
+			throw e;
 		}
+		return idsArrays;
 	}
 
 	@SuppressWarnings("unused")
-	private static String removeExtension(String fileName) {
+	private static String removeExtension(String fileName) throws IOException {
 		List<String> extList = new ArrayList<String>();
 		String newFileName = fileName;
 		try {
@@ -101,11 +106,13 @@ public class DataHandler {
 
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 		return newFileName;
 	}
 
-	private static String[] removeExtension(String[] fileName) {
+	private static String[] removeExtension(String[] fileName)
+			throws IOException {
 		List<String> extList = new ArrayList<String>();
 		try {
 			InputStream in = DataHandler.class
@@ -121,70 +128,99 @@ public class DataHandler {
 			}
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 		return fileName;
 	}
 
-	public static float[] audioread(String fileName, String extension) {
+	public static float[] audioread(String fileName, String extension)
+			throws UnsupportedAudioFileException, IOException {
 
 		float[] audioArrays = null;
 
-		switch (extension) {
-		case "wav":
-		case "":
-			audioArrays = wavToDat(fileName + "." + extension);
-			break;
-		case "raw":
-			audioArrays = rawToDat(fileName + "." + extension);
-			break;
-		default:
-			break;
+		try {
+			switch (extension) {
+			case "wav":
+			case "":
+				audioArrays = wavToDat(fileName + "." + extension);
+				break;
+			case "raw":
+				audioArrays = rawToDat(fileName + "." + extension);
+				break;
+			default:
+				break;
+			}
+		} catch (UnsupportedAudioFileException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 
 		return audioArrays;
 	}
 
-	public static double[][] codesread(String fileName, String extension) {
+	public static double[][] codesread(String fileName, String extension)
+			throws FileNotFoundException, IOException {
 		double[][] codes = null;
-		switch (extension) {
-		case "mat":
-		case "":
-			codes = matToCodes(fileName + "." + extension);
-			break;
-		case "bin":
-			break;
-		default:
-			break;
+		try {
+			switch (extension) {
+			case "mat":
+			case "":
+				codes = matToCodes(fileName + "." + extension);
+				break;
+			case "bin":
+				break;
+			default:
+				break;
+			}
+		} catch (FileNotFoundException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 
 		return codes;
 	}
 
 	public static void writecode(String fileName, double[][] codeData,
-			String codeExtention) {
-		switch (codeExtention) {
-		case "mat":
-			writeToMat(fileName + "." + codeExtention, codeData);
-			break;
+			String codeExtention) throws IOException {
+		try {
+			switch (codeExtention) {
+			case "mat":
+				writeToMat(fileName + "." + codeExtention, codeData);
+				break;
 
-		default:
-			break;
+			default:
+				break;
+			}
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 	}
 
 	public static void writeaudio(String fileName, double[] audioData,
-			String audioExtension) {
-		switch (audioExtension) {
-		case "raw":
-			writeToRaw(fileName + "." + audioExtension, audioData);
-			break;
+			String audioExtension) throws IOException {
+		try {
+			switch (audioExtension) {
+			case "raw":
+				writeToRaw(fileName + "." + audioExtension, audioData);
+				break;
 
-		default:
-			break;
+			default:
+				break;
+			}
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 	}
 
-	private static float[] rawToDat(String fileName) {
+	private static float[] rawToDat(String fileName) throws IOException {
 		float[] audioData = null;
 		try {
 			FileInputStream fis = new FileInputStream(fileName);
@@ -200,13 +236,15 @@ public class DataHandler {
 			}
 
 			fis.close();
-		} catch (Exception e) {
+		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 		return audioData;
 	}
 
-	private static float[] wavToDat(String fileName) {
+	private static float[] wavToDat(String fileName)
+			throws UnsupportedAudioFileException, IOException {
 		float[] audioData = null;
 		File file;
 		AudioInputStream ais;
@@ -240,19 +278,23 @@ public class DataHandler {
 			ais.close();
 		} catch (UnsupportedAudioFileException | IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 		return audioData;
 	}
 
-	private static double[][] matToCodes(String fileName) {
+	private static double[][] matToCodes(String fileName) throws IOException,
+			FileNotFoundException {
 		double[][] codes = null;
 		try {
 			MatFileReader mfr = new MatFileReader(fileName);
 			codes = ((MLDouble) mfr.getMLArray("f")).getArray();
 		} catch (FileNotFoundException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 		return codes;
 	}
@@ -264,7 +306,8 @@ public class DataHandler {
 		return new double[0][0];
 	}
 
-	private static void writeToRaw(String fileName, double[] audioData) {
+	private static void writeToRaw(String fileName, double[] audioData)
+			throws IOException {
 		try {
 
 			short[] shortBuffer = new short[audioData.length];
@@ -278,10 +321,12 @@ public class DataHandler {
 			Files.write(Paths.get(fileName), buffer.array());
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 	}
 
-	private static void writeToMat(String fileName, double[][] codeData) {
+	private static void writeToMat(String fileName, double[][] codeData)
+			throws IOException {
 		String varName = "f";
 		MLDouble mlDouble = new MLDouble(varName, codeData);
 
@@ -294,8 +339,8 @@ public class DataHandler {
 			new MatFileWriter(fileName, list);
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
-
 	}
 
 }

@@ -8,35 +8,34 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.sound.sampled.UnsupportedAudioFileException;
+
 import th.ac.kmitl.it.prip.fractal.DataHandler;
 import th.ac.kmitl.it.prip.fractal.Executer;
+import th.ac.kmitl.it.prip.fractal.Parameters.ProcessName;
 
 public class DecompressorExecuter extends Executer {
 	private static final Logger LOGGER = Logger
 			.getLogger(DecompressorExecuter.class.getName());
 
-	private static void estimate() {
-		// estimate runtime
-		final String[] idsList = DataHandler.getIdsPathList(parameters);
-		for (int i = 0; i < idsList.length; i++) {
-			double[][] codes = DataHandler.codesread(idsList[i],
-					parameters.getInExtension());
-			Decompressor decompressor = new Decompressor(codes, parameters);
-			nSamples += decompressor.getNSamples();
-			nParts += decompressor.getNParts();
-		}
-		int samplesUnit = (int) (Math.log10(nSamples) / 3);
-		int partsUnit = (int) (Math.log10(nParts) / 3);
-		LOGGER.log(Level.INFO, String.format(
-				"Expect %d %s samples %d %s parts",
-				(int) (nSamples / Math.pow(10, samplesUnit * 3)),
-				UNITS[samplesUnit],
-				(int) (nParts / Math.pow(10, partsUnit * 3)), UNITS[partsUnit]));
-	}
 
-	private static void decompress() {
-		final String[] idsList = DataHandler.getIdsPathList(parameters);
-		final String[] nameList = DataHandler.getIdsNameList(parameters);
+	private static void decompress() throws IOException {
+		String[] idsList;
+		try {
+			idsList = DataHandler.getIdsPathList(parameters);
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "Can not open file paths list : "
+					+ parameters.getInPathPrefix());
+			throw e;
+		}
+		String[] nameList;
+		try {
+			nameList = DataHandler.getIdsNameList(parameters);
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, "Can not open file names list : "
+					+ parameters.getInfile());
+			throw e;
+		}
 		List<String> audioPathList = new ArrayList<String>();
 		List<String> timing = new ArrayList<String>();
 		List<String> logs = new ArrayList<String>();
@@ -78,19 +77,24 @@ public class DecompressorExecuter extends Executer {
 						"\\decompresslog.txt"), logs);
 			} catch (IOException e) {
 				LOGGER.log(Level.SEVERE, e.getMessage());
+				throw e;
 			}
 		}
 		LOGGER.log(Level.FINE, "Complete Exec");
 	}
 
-	public static void exec() {
-		readParameters();
-		LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
-		LOGGER.log(Level.INFO, parameters.toString());
-		prepare();
-		estimate();
-		decompress();
-
+	public static void exec() throws IOException, UnsupportedAudioFileException {
+		try {
+			readParameters();
+			LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
+			LOGGER.log(Level.INFO, parameters.toString());
+			prepare();
+			estimate(ProcessName.DECOMPRESS);
+			decompress();
+		} catch (IOException e) {
+			LOGGER.info(e.getMessage());
+			throw e;
+		}
 	}
 
 	private DecompressorExecuter() {

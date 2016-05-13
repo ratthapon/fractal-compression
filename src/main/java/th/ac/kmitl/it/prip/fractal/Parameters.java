@@ -3,7 +3,10 @@ package th.ac.kmitl.it.prip.fractal;
 import java.nio.file.Paths;
 
 public class Parameters {
-
+	public static enum ProcessName {
+		COMPRESS, DECOMPRESS, DISTRIBUTED_COMPRESS, DISTRIBUTED_DECOMPRESS,
+	}
+	
 	private String testName = null;
 	private String infile = null;
 	private String inPathPrefix = "";
@@ -74,6 +77,7 @@ public class Parameters {
 				} else {
 					// skip fault value
 				}
+				throw e;
 			}
 		}
 		setDefault();

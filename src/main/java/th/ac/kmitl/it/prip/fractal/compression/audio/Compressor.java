@@ -210,7 +210,7 @@ public class Compressor {
 		return result;
 	}
 
-	public double[][] compress() {
+	public double[][] compress() throws InterruptedException, ExecutionException {
 		final int nCoeff = parameters.getNCoeff();
 		double[][] code = new double[nParts][nCoeff + 3];
 
@@ -269,8 +269,10 @@ public class Compressor {
 			}
 		} catch (InterruptedException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		} catch (ExecutionException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		} finally {
 			executorService.shutdown();
 		}
