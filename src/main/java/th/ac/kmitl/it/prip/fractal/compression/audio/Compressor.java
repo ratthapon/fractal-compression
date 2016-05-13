@@ -73,7 +73,7 @@ public class Compressor {
 		parameters = compressParameters;
 		data = inputAudioData;
 		nSamples = data.length;
-		parts = this.partition();
+		parts = this.adaptivePartition();
 		nSamples = Arrays.stream(parts).sum();
 		nParts = parts.length;
 		samplesProgress = new AtomicInteger(0);
@@ -115,10 +115,57 @@ public class Compressor {
 		return result;
 	}
 
-	private int[] partition() {
-		int[] rangeSize = new int[nSamples]; // partitioned boundary size
-		boolean canPartition = true;
+	private int[] adaptivePartition() {
+		// partitioned boundary size
+		int[] rangeSize = prepartition(new int[nSamples]);
 
+		// loop until can't partition
+		boolean canPartition = true;
+		while (canPartition) {
+			canPartition = false;
+
+			// for entire data
+			for (int idx = 0; idx < nSamples; idx++) {
+				int chunkSize = 0;
+				chunkSize = (int) rangeSize[idx];
+				// found boundary information
+				if (chunkSize > 0) {
+					// retrieve necessary information
+					int from = idx;
+					int to = from + chunkSize - 1;
+					// check if need to partition
+					if (needToSegment(from, to)) {
+						canPartition = true;
+						
+						// partition a range
+						rangeSize = partition(rangeSize, idx, from, to);
+					}
+				}
+			}
+		}
+		// clear zeros element data
+		int[] result = removeZeroElements(rangeSize);
+		return result;
+	}
+
+	private int[] partition(int[] rangeSize, int idx, int from, int to) {
+		// reset old information in boundary
+		for (int i = from; i < to && i < nSamples; i++) {
+			rangeSize[i] = 0;
+		}
+		// set new information
+		int midPosition = from
+				+ (int) Math.floor((to - from) / 2) + 1;
+		if (midPosition < nSamples) {
+			rangeSize[idx] = midPosition - from;
+		}
+		if (to < nSamples && midPosition < nSamples) {
+			rangeSize[midPosition] = to - midPosition + 1;
+		}
+		return rangeSize;
+	}
+
+	private int[] prepartition(int[] rangeSize) {
 		rangeSize[0] = nSamples; // init size
 		// init size
 		for (int idx = 0; idx < nSamples; idx += parameters.getMaxBlockSize()) {
@@ -138,42 +185,10 @@ public class Compressor {
 				}
 			}
 		}
+		return rangeSize;
+	}
 
-		// loop until can't partition
-		canPartition = true;
-		while (canPartition) {
-			canPartition = false;
-
-			// for entire data
-			for (int idx = 0; idx < nSamples; idx++) {
-				int chunkSize = 0;
-				chunkSize = (int) rangeSize[idx];
-				// found boundary information
-				if (chunkSize > 0) {
-					// retrieve necessary information
-					int from = idx;
-					int to = from + chunkSize - 1;
-					// check if need to partition
-					if (needToSegment(from, to)) {
-						canPartition = true;
-
-						// reset old information in boundary
-						for (int i = from; i < to && i < nSamples; i++) {
-							rangeSize[i] = 0;
-						}
-						// set new information
-						int midPosition = from
-								+ (int) Math.floor((to - from) / 2) + 1;
-						if (midPosition < nSamples) {
-							rangeSize[idx] = midPosition - from;
-						}
-						if (to < nSamples && midPosition < nSamples) {
-							rangeSize[midPosition] = to - midPosition + 1;
-						}
-					}
-				}
-			}
-		}
+	private int[] removeZeroElements(int[] rangeSize) {
 		// count non zero for allocate buffer
 		int count = 0;
 		for (int i = 0; i < rangeSize.length; i++) {
