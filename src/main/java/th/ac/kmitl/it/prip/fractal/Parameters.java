@@ -80,7 +80,7 @@ public class Parameters {
 		return this;
 	}
 
-	protected void setParameter(String argName, String argValue) {
+	private void setProjectParameter(String argName, String argValue) {
 		switch (argName.toLowerCase()) {
 		case "testname":
 			testName = argValue;
@@ -101,6 +101,25 @@ public class Parameters {
 		case "outext":
 			outExtension = argValue;
 			break;
+		case "maxprocess": // max parallel process
+			maxParallelProcess = Integer.parseInt(argValue);
+			break;
+		case "reportrate":
+			progressReportRate = Long.parseLong(argValue);
+			break;
+		default:
+			break;
+		}
+	}
+
+	private void setEncodeParameter(String argName, String argValue) {
+		switch (argName.toLowerCase()) {
+		case "adaptive":
+			adaptivePartition = Boolean.parseBoolean(argValue);
+			break;
+		case "coefflimit":
+			coeffLimit = Float.parseFloat(argValue);
+			break;
 		case "minr":
 		case "minpartsize":
 			minBlockSize = Integer.parseInt(argValue);
@@ -115,29 +134,13 @@ public class Parameters {
 		case "step":
 			dStep = Integer.parseInt(argValue);
 			break;
-		case "domainscale":
-		case "AA":
-			domainScale = Integer.parseInt(argValue);
+		default:
 			break;
-		case "maxprocess": // max parallel process
-			maxParallelProcess = Integer.parseInt(argValue);
-			break;
-		case "h":
-		case "help":
-			isHelp = true;
-			break;
-		case "adaptive":
-			adaptivePartition = Boolean.parseBoolean(argValue);
-			break;
-		case "reportrate":
-			progressReportRate = Long.parseLong(argValue);
-			break;
-		case "ncoeff":
-			nCoeff = Integer.parseInt(argValue);
-			break;
-		case "coefflimit":
-			coeffLimit = Float.parseFloat(argValue);
-			break;
+		}
+	}
+
+	private void setDecodeParameter(String argName, String argValue) {
+		switch (argName.toLowerCase()) {
 		case "alpha":
 			alpha = Float.parseFloat(argValue);
 			break;
@@ -149,8 +152,27 @@ public class Parameters {
 		case "fs":
 			samplingRate = Integer.parseInt(argValue);
 			break;
-
 		default:
+			break;
+		}
+	}
+
+	protected void setParameter(String argName, String argValue) {
+		setProjectParameter(argName, argValue);
+		setEncodeParameter(argName, argValue);
+		setDecodeParameter(argName, argValue);
+		switch (argName.toLowerCase()) {
+		case "domainscale":
+		case "AA":
+			domainScale = Integer.parseInt(argValue);
+			break;
+		case "ncoeff":
+			nCoeff = Integer.parseInt(argValue);
+			break;
+		case "h":
+		case "help":
+		default:
+			isHelp = true;
 			break;
 		}
 	}
