@@ -1,5 +1,6 @@
 package th.ac.kmitl.it.prip.fractal.decompression.audio;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -74,7 +75,6 @@ public class DecompressorExecuter extends Executer {
 	}
 
 	private DecompressorExecuter() {
-
 	}
 
 }

@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -343,4 +344,29 @@ public class DataHandler {
 		}
 	}
 
+	private static void writeToWav(String fileName, double[] audioData,
+			int sampleRate) {
+		final boolean bigEndian = false;
+		final int nBit = 16;
+		final int nCH = 1;
+		try {
+			byte[] byteBuffer = new byte[audioData.length * 2];
+			short[] valueBuffer = new short[audioData.length];
+			for (int i = 0; i < valueBuffer.length; i++) {
+				valueBuffer[i] = (short) ((audioData[i] / Math.pow(2, 15)) * Short.MAX_VALUE);
+			}
+			ByteBuffer.wrap(byteBuffer).order(ByteOrder.LITTLE_ENDIAN)
+					.asShortBuffer().put(valueBuffer);
+			ByteArrayInputStream bais = new ByteArrayInputStream(byteBuffer);
+			AudioFormat format = new AudioFormat((float) sampleRate, nBit, nCH,
+					true, bigEndian);
+			AudioInputStream ais = new AudioInputStream(bais, format,
+					byteBuffer.length);
+			AudioSystem.write(ais, AudioFileFormat.Type.WAVE,
+					Paths.get(fileName).toFile());
+			ais.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }

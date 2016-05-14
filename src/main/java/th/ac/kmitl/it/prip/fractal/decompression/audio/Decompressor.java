@@ -1,8 +1,11 @@
 package th.ac.kmitl.it.prip.fractal.decompression.audio;
 
 import java.util.Arrays;
+<<<<<<< HEAD
 import java.util.logging.Level;
 import java.util.logging.Logger;
+=======
+>>>>>>> feature
 
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -37,8 +40,8 @@ public class Decompressor {
 
 	public double[] decompress() {
 		final int nCoeff = parameters.getNCoeff();
-		double[] audioData = new double[nSamples];
-		double[] bufferAudioData = new double[nSamples];
+		double[] audioData = new double[(int) (nSamples * parameters.getAlpha())];
+		double[] bufferAudioData = new double[audioData.length];
 		initTime = System.currentTimeMillis();
 		// iteration
 		for (int iter = 0; iter < parameters.getMaxIteration(); iter++) {

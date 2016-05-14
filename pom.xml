@@ -3,7 +3,14 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>th.ac.kmitl.it.prip.fractal.compression.audio</groupId>
 	<artifactId>audio-compressor</artifactId>
+<<<<<<< HEAD
 	<version>0.1.1</version>
+=======
+	<version>0.1.4</version>
+	<properties>
+		<skipTests>true</skipTests>
+	</properties>
+>>>>>>> feature
 	<build>
 		<plugins>
 			<!-- Set a JDK compiler level -->
@@ -50,10 +57,49 @@
 					</archive>
 				</configuration>
 			</plugin>
+<<<<<<< HEAD
+=======
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>2.9</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/lib</outputDirectory>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemProperties>
+						<property>
+							<name>java.library.path</name>
+							<value>${basedir}/lib</value>
+						</property>
+					</systemProperties>
+				</configuration>
+			</plugin>
+>>>>>>> feature
 		</plugins>
 	</build>
 	<dependencies>
 		<dependency>
+<<<<<<< HEAD
+=======
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+		</dependency>
+		<dependency>
+>>>>>>> feature
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-math3</artifactId>
 			<version>3.5</version>
@@ -68,6 +114,25 @@
 			<artifactId>commons-lang3</artifactId>
 			<version>3.4</version>
 		</dependency>
+<<<<<<< HEAD
+=======
+		<dependency>
+			<groupId>jcuda</groupId>
+			<artifactId>jcuda</artifactId>
+			<version>0.7.5</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/jcuda-0.7.5.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>jcuda</groupId>
+			<artifactId>jcublas</artifactId>
+			<version>0.7.5</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/jcublas-0.7.5.jar</systemPath>
+		</dependency>
+
+
+>>>>>>> feature
 	</dependencies>
 
 </project>

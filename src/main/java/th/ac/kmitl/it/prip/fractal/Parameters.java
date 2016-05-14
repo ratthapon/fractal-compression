@@ -1,33 +1,47 @@
 package th.ac.kmitl.it.prip.fractal;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Parameters {
 	public static enum ProcessName {
 		COMPRESS, DECOMPRESS, DISTRIBUTED_COMPRESS, DISTRIBUTED_DECOMPRESS,
 	}
-	
+
+	// co-parameters
+	private ProcessName processName = null;
 	private String testName = null;
 	private String infile = null;
 	private String inPathPrefix = "";
+	private int fromIdx = -1;
+	private int toIdx = -1;
 	private String outdir = null;
 	private String inExtension = null;
 	private String outExtension = null;
-	private int minBlockSize = 4;
-	private int maxBlockSize = 128;
-	private float thresh = 1e-4f;
-	private int domainScale = 2;
 	private int maxParallelProcess = 1;
+	private long progressReportRate = 0;
+	private boolean skipIfExist = true;
+	private boolean isHelp;
+	private boolean validParams;
+
+	// compression parameters
 	private boolean adaptivePartition = true;
 	private int dStep = 1;
 	private int nCoeff = 2;
 	private float coeffLimit = 0.9f;
-	private boolean validParams;
-	private long progressReportRate = 0;
+	private int minBlockSize = 4;
+	private int maxBlockSize = 128;
+	private float thresh = 1e-4f;
+	private int domainScale = 2;
+	private int maxDomainSize = -1;
+
+	// decompression parameters
 	private double alpha = 1.0d;
 	private int maxIteration = 15;
 	private int samplingRate = 0;
-	private boolean isHelp;
 
 	private Parameters() {
 	}
@@ -41,6 +55,17 @@ public class Parameters {
 		if (infile == null || nCoeff < 2) {
 			validParams = false;
 			return;
+		}
+		if (fromIdx < 0) {
+			fromIdx = 0;
+		}
+		if (toIdx < 0) {
+			try {
+				toIdx = Files.readAllLines(Paths.get(infile)).size();
+			} catch (IOException e) {
+				toIdx = fromIdx;
+				e.printStackTrace();
+			}
 		}
 		if (testName == null) {
 			testName = Paths.get(infile).getFileName().toString()
@@ -111,6 +136,19 @@ public class Parameters {
 		case "reportrate":
 			progressReportRate = Long.parseLong(argValue);
 			break;
+		case "fromto":
+			Pattern pattern = Pattern.compile("(\\d+)-(\\d+)");
+			Matcher matcher = pattern.matcher(argValue);
+			fromIdx = Integer.parseInt(matcher.group(1)) - 1;
+			toIdx = Integer.parseInt(matcher.group(2));
+			break;
+		case "processname":
+			processName = ProcessName.valueOf(argValue.toUpperCase());
+			System.out.println(processName);
+			break;
+		case "skipifexist":
+			skipIfExist = Boolean.parseBoolean(argValue);
+			break;
 		default:
 			break;
 		}
@@ -177,7 +215,6 @@ public class Parameters {
 		case "help":
 		default:
 			isHelp = true;
-			break;
 		}
 	}
 
@@ -302,4 +339,23 @@ public class Parameters {
 		return samplingRate;
 	}
 
+	public int getFromIdx() {
+		return fromIdx;
+	}
+
+	public int getToIdx() {
+		return toIdx;
+	}
+
+	public ProcessName getProcessName() {
+		return processName;
+	}
+
+	public boolean isSkipIfExist() {
+		return skipIfExist;
+	}
+
+	public int getMaxDomainSize() {
+		return maxDomainSize;
+	}
 }

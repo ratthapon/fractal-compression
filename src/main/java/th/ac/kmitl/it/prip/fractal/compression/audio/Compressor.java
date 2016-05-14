@@ -13,7 +13,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
@@ -164,8 +163,6 @@ public class Compressor {
 		}
 		return rangeSize;
 	}
-
-	private int[] prepartition(int[] rangeSize) {
 		rangeSize[0] = nSamples; // init size
 		// init size
 		for (int idx = 0; idx < nSamples; idx += parameters.getMaxBlockSize()) {
@@ -233,7 +230,6 @@ public class Compressor {
 
 			// parallel range mapping : queuing phase
 			rangeTask.add(new Callable<float[]>() {
-
 				public float[] call() {
 					float[] codeChunk = getContractCoeff(rangeIdx, nCoeff,
 							rangeBlockSize, bColStart, bColEnd);
@@ -260,7 +256,6 @@ public class Compressor {
 			List<Future<float[]>> futures = executorService
 					.invokeAll(rangeTask);
 			completeTime = System.currentTimeMillis();
-
 			for (int c = 0; c < futures.size(); c++) {
 				Future<float[]> future = futures.get(c);
 				// store minimum code value of self similarity
@@ -445,5 +440,4 @@ public class Compressor {
 		}
 		return codeChunk;
 	}
-
 }

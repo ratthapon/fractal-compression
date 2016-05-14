@@ -11,45 +11,31 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
-
-import th.ac.kmitl.it.prip.fractal.Parameters.ProcessName;
-import th.ac.kmitl.it.prip.fractal.compression.audio.Compressor;
-import th.ac.kmitl.it.prip.fractal.decompression.audio.Decompressor;
-
-public abstract class Executer {
-	private static final Logger LOGGER = Logger.getLogger(Executer.class
-			.getName());
+public class Executer {
 
 	protected static final String[] UNITS = { "", "k", "M", "G", "T", "P" };
-	public static final int DELTA_TIME = 5000;
+	protected static final int DELTA_TIME = 5000;
 	protected static Parameters parameters;
-	private static String[] inputParams;
+	protected static String[] inputParams;
 	protected static int nSamples = 0;
 	protected static int nParts = 0;
 
-	protected static void readParameters() throws IOException {
-		List<String> parametersList = new ArrayList<>();
-		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(
-					System.in));
-			String parameter = br.readLine();
-			while (parameter.length() > 0) {
-				parametersList.add(parameter);
-				parameter = br.readLine();
-			}
-		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE, e.getMessage());
-			throw e;
-		}
-		String[] result = new String[parametersList.size()];
-		for (int i = 0; i < parametersList.size(); i++) {
-			result[i] = parametersList.get(i);
+	protected static void processParameters(String[] lines) {
+		inputParams = lines;
+		processParameters();
+	}
+
+	public static void processParameters(List<String> lines) {
+		String[] result = new String[lines.size()];
+		for (int i = 0; i < lines.size(); i++) {
+			result[i] = lines.get(i);
 		}
 		inputParams = result;
+		processParameters();
+	}
+
+	private static void processParameters() {
 		parameters = new Parameters(inputParams);
 		if (parameters.isHelp()) {
 			try {
