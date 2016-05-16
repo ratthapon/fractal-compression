@@ -16,11 +16,12 @@ import java.util.logging.Logger;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import th.ac.kmitl.it.prip.fractal.Parameters;
 import th.ac.kmitl.it.prip.fractal.Parameters.ProcessName;
 import th.ac.kmitl.it.prip.fractal.compression.audio.Compressor;
 import th.ac.kmitl.it.prip.fractal.decompression.audio.Decompressor;
 
-public class Executer {
+public abstract class Executer {
 	private static final Logger LOGGER = Logger.getLogger(Executer.class
 			.getName());
 

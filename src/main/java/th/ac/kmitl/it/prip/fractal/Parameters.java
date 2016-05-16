@@ -110,6 +110,8 @@ public class Parameters {
 	}
 
 	private void setProjectParameter(String argName, String argValue) {
+		Matcher fromToMatcher = Pattern.compile("(\\d+)-(\\d+)").matcher(
+				argValue);
 		switch (argName.toLowerCase()) {
 		case "testname":
 			testName = argValue;
@@ -137,10 +139,9 @@ public class Parameters {
 			progressReportRate = Long.parseLong(argValue);
 			break;
 		case "fromto":
-			Pattern pattern = Pattern.compile("(\\d+)-(\\d+)");
-			Matcher matcher = pattern.matcher(argValue);
-			fromIdx = Integer.parseInt(matcher.group(1)) - 1;
-			toIdx = Integer.parseInt(matcher.group(2));
+
+			fromIdx = Integer.parseInt(fromToMatcher.group(1)) - 1;
+			toIdx = Integer.parseInt(fromToMatcher.group(2));
 			break;
 		case "processname":
 			processName = ProcessName.valueOf(argValue.toUpperCase());

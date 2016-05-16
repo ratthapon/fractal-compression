@@ -40,12 +40,12 @@ public class MainExecuter {
 	public static void exec() throws IOException,
 			UnsupportedAudioFileException, InterruptedException {
 		switch (Executer.parameters.getProcessName()) {
-		default:
-		case COMPRESS:
-			CompressorExecuter.exec();
-			break;
 		case DECOMPRESS:
 			DecompressorExecuter.exec();
+			break;
+		case COMPRESS:
+		default:
+			CompressorExecuter.exec();
 			break;
 		}
 	}
