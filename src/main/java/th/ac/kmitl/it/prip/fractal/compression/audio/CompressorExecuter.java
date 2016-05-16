@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 
 import th.ac.kmitl.it.prip.fractal.DataHandler;
 import th.ac.kmitl.it.prip.fractal.Executer;
+import th.ac.kmitl.it.prip.fractal.compression.audio.gpu.CUCompressor;
 
 public class CompressorExecuter extends Executer {
 	private static final Logger LOGGER = Logger
@@ -53,7 +54,7 @@ public class CompressorExecuter extends Executer {
 					public double[][] call() throws Exception {
 						float[] inputAudioData = DataHandler.audioread(
 								idsList[idsIdx], parameters.getInExtension());
-						compressor = new Compressor(inputAudioData, parameters);
+						compressor = getCompressor(inputAudioData);
 
 						// process compressor
 						double[][] codes = compressor.compress();
@@ -126,5 +127,13 @@ public class CompressorExecuter extends Executer {
 
 	public static AtomicInteger getPassedNParts() {
 		return passedNParts;
+	}
+
+	private static Compressor getCompressor(float[] inputAudioData) {
+		if (parameters.isGpuEnable()) {
+			return new CUCompressor(inputAudioData, parameters);
+		} else {
+			return new Compressor(inputAudioData, parameters);
+		}
 	}
 }
