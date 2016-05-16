@@ -3,10 +3,14 @@ package th.ac.kmitl.it.prip.fractal;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Parameters {
+	private static final Logger LOGGER = Logger.getLogger(Parameters.class
+			.getName());
 
 	public static enum ProcessName {
 		COMPRESS, DECOMPRESS, DISTRIBUTED_COMPRESS, DISTRIBUTED_DECOMPRESS,
@@ -145,7 +149,7 @@ public class Parameters {
 			break;
 		case "processname":
 			processName = ProcessName.valueOf(argValue.toUpperCase());
-			System.out.println(processName);
+			LOGGER.log(Level.INFO, processName.toString());
 			break;
 		case "skipifexist":
 			skipIfExist = Boolean.parseBoolean(argValue);

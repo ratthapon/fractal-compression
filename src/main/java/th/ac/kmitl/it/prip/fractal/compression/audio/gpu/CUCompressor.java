@@ -89,7 +89,7 @@ public class CUCompressor extends Compressor {
 		JCudaDriver.cuModuleGetFunction(sumSquareErrorKernel,
 				sumSquareErrorModule, "sumSquareError");
 
-		final int H2D = cudaMemcpyHostToDevice;
+		final int h2d = cudaMemcpyHostToDevice;
 		final int nCoeff = parameters.getNCoeff();
 		double[][] code = new double[nParts][nCoeff + 3];
 		if (nCoeff <= 1) {
@@ -120,7 +120,7 @@ public class CUCompressor extends Compressor {
 		// init audio data power 0
 		cudaMalloc(deviceData, Sizeof.FLOAT * nSamples);
 		cudaMalloc(deviceDataRev, Sizeof.FLOAT * nSamples);
-		cudaMemcpy(deviceData, Pointer.to(data), Sizeof.FLOAT * nSamples, H2D);
+		cudaMemcpy(deviceData, Pointer.to(data), Sizeof.FLOAT * nSamples, h2d);
 
 		// Set up the kernel parameters: A pointer to an array
 		// of pointers which point to the actual values.
@@ -311,6 +311,7 @@ public class CUCompressor extends Compressor {
 
 			} catch (Exception e) {
 				LOGGER.log(Level.WARNING, "cuBlass Error.");
+				throw new IllegalStateException(e);
 			}
 			// find min sum square error idx
 			int minSSEIdx = -1;
