@@ -1,5 +1,3 @@
 /target
-<<<<<<< HEAD
 *.log
-=======
->>>>>>> feature
+.sonar

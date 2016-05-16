@@ -14,6 +14,10 @@ import static jcuda.runtime.JCuda.cudaStreamCreate;
 import static jcuda.runtime.cudaMemcpyKind.cudaMemcpyDeviceToDevice;
 import static jcuda.runtime.cudaMemcpyKind.cudaMemcpyDeviceToHost;
 import static jcuda.runtime.cudaMemcpyKind.cudaMemcpyHostToDevice;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import jcuda.Pointer;
 import jcuda.Sizeof;
 import jcuda.driver.CUcontext;
@@ -28,8 +32,12 @@ import jcuda.runtime.JCuda;
 import jcuda.runtime.cudaStream_t;
 import th.ac.kmitl.it.prip.fractal.Parameters;
 import th.ac.kmitl.it.prip.fractal.compression.audio.Compressor;
+import th.ac.kmitl.it.prip.fractal.decompression.audio.Decompressor;
 
 public class CUCompressor extends Compressor {
+	private static final Logger LOGGER = Logger.getLogger(CUCompressor.class
+			.getName());
+
 	private float[] data = null;
 
 	public CUCompressor(float[] inputAudioData, Parameters compressParameters) {
@@ -86,9 +94,9 @@ public class CUCompressor extends Compressor {
 		final int nCoeff = parameters.getNCoeff();
 		double[][] code = new double[nParts][nCoeff + 3];
 		if (nCoeff <= 1) {
-			System.out
-					.println("Invalid n coefficients. It should greater than 1.");
-			System.exit(0);
+			String logMsg = "Invalid n coefficients. It should greater than 1.";
+			LOGGER.log(Level.WARNING, logMsg);
+			throw new IllegalArgumentException(logMsg);
 		}
 
 		initTime = System.currentTimeMillis();
@@ -303,7 +311,7 @@ public class CUCompressor extends Compressor {
 				JCuda.cudaStreamSynchronize(stream);
 
 			} catch (Exception e) {
-				e.printStackTrace();
+				LOGGER.log(Level.WARNING, "cuBlass Error.");
 			}
 			// find min sum square error idx
 			int minSSEIdx = -1;

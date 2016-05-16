@@ -7,10 +7,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Parameters {
+
 	public static enum ProcessName {
 		COMPRESS, DECOMPRESS, DISTRIBUTED_COMPRESS, DISTRIBUTED_DECOMPRESS,
 	}
-
 
 	// co-parameters
 	private ProcessName processName = null;
@@ -51,12 +51,12 @@ public class Parameters {
 	private Parameters() {
 	}
 
-	public Parameters(String[] args) {
+	public Parameters(String[] args) throws IOException {
 		new Parameters();
 		this.generateFrom(args);
 	}
 
-	private void setDefault() {
+	private void setDefault() throws IOException {
 		if (infile == null || nCoeff < 2) {
 			validParams = false;
 			return;
@@ -65,12 +65,7 @@ public class Parameters {
 			fromIdx = 0;
 		}
 		if (toIdx < 0) {
-			try {
-				toIdx = Files.readAllLines(Paths.get(infile)).size();
-			} catch (IOException e) {
-				toIdx = fromIdx;
-				e.printStackTrace();
-			}
+			toIdx = Files.readAllLines(Paths.get(infile)).size();
 		}
 		if (testName == null) {
 			testName = Paths.get(infile).getFileName().toString()
@@ -94,7 +89,7 @@ public class Parameters {
 		validParams = true;
 	}
 
-	public Parameters generateFrom(String[] args) {
+	public Parameters generateFrom(String[] args) throws IOException {
 		for (String arg : args) {
 			try {
 				String argName = arg.substring(0, arg.indexOf(" "));
