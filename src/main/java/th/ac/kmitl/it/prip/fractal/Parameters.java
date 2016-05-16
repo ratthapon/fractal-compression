@@ -11,6 +11,7 @@ public class Parameters {
 		COMPRESS, DECOMPRESS, DISTRIBUTED_COMPRESS, DISTRIBUTED_DECOMPRESS,
 	}
 
+
 	// co-parameters
 	private ProcessName processName = null;
 	private String testName = null;
@@ -26,6 +27,7 @@ public class Parameters {
 	private boolean skipIfExist = true;
 	private boolean isHelp;
 	private boolean validParams;
+	private int overlap = 0;
 
 	// compression parameters
 	private boolean adaptivePartition = true;
@@ -36,7 +38,10 @@ public class Parameters {
 	private int maxBlockSize = 128;
 	private float thresh = 1e-4f;
 	private int domainScale = 2;
-	private int maxDomainSize = -1;
+	private int frameLength = -1;
+	private boolean usingCV = false;
+	private boolean gpuEnable = false;
+	private float regularize = 0.0f;
 
 	// decompression parameters
 	private double alpha = 1.0d;
@@ -355,7 +360,31 @@ public class Parameters {
 		return skipIfExist;
 	}
 
-	public int getMaxDomainSize() {
-		return maxDomainSize;
+	public int getOverlap() {
+		return overlap;
+	}
+
+	public int getdStep() {
+		return dStep;
+	}
+
+	public int getnCoeff() {
+		return nCoeff;
+	}
+
+	public int getFrameLength() {
+		return frameLength;
+	}
+
+	public boolean isUsingCV() {
+		return usingCV;
+	}
+
+	public boolean isGpuEnable() {
+		return gpuEnable;
+	}
+
+	public float getRegularize() {
+		return regularize;
 	}
 }

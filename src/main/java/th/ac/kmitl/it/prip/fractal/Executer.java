@@ -11,22 +11,32 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.sound.sampled.UnsupportedAudioFileException;
+
+import th.ac.kmitl.it.prip.fractal.Parameters.ProcessName;
+import th.ac.kmitl.it.prip.fractal.compression.audio.Compressor;
+import th.ac.kmitl.it.prip.fractal.decompression.audio.Decompressor;
 
 public class Executer {
+	private static final Logger LOGGER = Logger.getLogger(Executer.class
+			.getName());
 
 	protected static final String[] UNITS = { "", "k", "M", "G", "T", "P" };
-	protected static final int DELTA_TIME = 5000;
+	public static final int DELTA_TIME = 5000;
 	protected static Parameters parameters;
 	protected static String[] inputParams;
 	protected static int nSamples = 0;
 	protected static int nParts = 0;
 
-	protected static void processParameters(String[] lines) {
+	protected static void processParameters(String[] lines) throws IOException {
 		inputParams = lines;
 		processParameters();
 	}
 
-	public static void processParameters(List<String> lines) {
+	public static void processParameters(List<String> lines) throws IOException {
 		String[] result = new String[lines.size()];
 		for (int i = 0; i < lines.size(); i++) {
 			result[i] = lines.get(i);
@@ -35,7 +45,7 @@ public class Executer {
 		processParameters();
 	}
 
-	private static void processParameters() {
+	private static void processParameters() throws IOException {
 		parameters = new Parameters(inputParams);
 		if (parameters.isHelp()) {
 			try {
@@ -143,7 +153,7 @@ public class Executer {
 	public static void exec() throws IOException,
 			UnsupportedAudioFileException, InterruptedException {
 		try {
-			readParameters();
+			processParameters();
 			LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
 			LOGGER.log(Level.INFO, parameters.toString());
 			if (parameters.isValidParams()) {

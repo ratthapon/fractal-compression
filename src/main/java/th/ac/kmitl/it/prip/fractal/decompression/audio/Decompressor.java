@@ -1,11 +1,8 @@
 package th.ac.kmitl.it.prip.fractal.decompression.audio;
 
 import java.util.Arrays;
-<<<<<<< HEAD
 import java.util.logging.Level;
 import java.util.logging.Logger;
-=======
->>>>>>> feature
 
 import org.apache.commons.lang3.ArrayUtils;
 

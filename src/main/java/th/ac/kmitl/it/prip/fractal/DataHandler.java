@@ -1,6 +1,7 @@
 package th.ac.kmitl.it.prip.fractal;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -14,11 +15,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -221,6 +223,24 @@ public class DataHandler {
 		}
 	}
 
+	public static void writeaudio(String fileName, double[] audioData,
+			String audioExtension, int sampleRate) throws IOException {
+		try {
+			switch (audioExtension) {
+			case "raw":
+				writeToWav(fileName + "." + audioExtension, audioData,
+						sampleRate);
+				break;
+
+			default:
+				break;
+			}
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
+		}
+	}
+
 	private static float[] rawToDat(String fileName) throws IOException {
 		float[] audioData = null;
 		try {
@@ -345,7 +365,7 @@ public class DataHandler {
 	}
 
 	private static void writeToWav(String fileName, double[] audioData,
-			int sampleRate) {
+			int sampleRate) throws IOException {
 		final boolean bigEndian = false;
 		final int nBit = 16;
 		final int nCH = 1;
@@ -366,7 +386,8 @@ public class DataHandler {
 					Paths.get(fileName).toFile());
 			ais.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
 		}
 	}
 }

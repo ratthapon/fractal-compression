@@ -13,6 +13,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
@@ -24,16 +25,16 @@ public class Compressor {
 	private static final Logger LOGGER = Logger.getLogger(Compressor.class
 			.getName());
 
-	private Parameters parameters = null;
+	protected Parameters parameters = null;
 	private float[] data = null;
-	private final int[] parts;
-	private int nParts;
-	private int nSamples;
-	private AtomicInteger partProgress;
-	private AtomicInteger samplesProgress;
-	private long initTime;
-	private long completeTime;
-	private boolean isDone = false;
+	protected final int[] parts;
+	protected int nParts;
+	protected int nSamples;
+	protected AtomicInteger partProgress;
+	protected AtomicInteger samplesProgress;
+	protected long initTime;
+	protected long completeTime;
+	protected boolean isDone = false;
 
 	private static int samplesCompressSpeed; // samples per sec
 	private static int partsCompressSpeed; // parts per sec
@@ -163,6 +164,8 @@ public class Compressor {
 		}
 		return rangeSize;
 	}
+	
+	private int[] prepartition(int[] rangeSize) {
 		rangeSize[0] = nSamples; // init size
 		// init size
 		for (int idx = 0; idx < nSamples; idx += parameters.getMaxBlockSize()) {
