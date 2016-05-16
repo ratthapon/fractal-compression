@@ -110,6 +110,7 @@ public class Parameters {
 			}
 		}
 		setDefault();
+		LOGGER.log(Level.INFO, processName.toString());
 		return this;
 	}
 
@@ -121,7 +122,6 @@ public class Parameters {
 			testName = argValue;
 			break;
 		case "infile":
-			// parse to standard
 			infile = Paths.get(argValue).toAbsolutePath().toString();
 			break;
 		case "inpathprefix":
@@ -136,20 +136,9 @@ public class Parameters {
 		case "outext":
 			outExtension = argValue;
 			break;
-		case "maxprocess": // max parallel process
-			maxParallelProcess = Integer.parseInt(argValue);
-			break;
-		case "reportrate":
-			progressReportRate = Long.parseLong(argValue);
-			break;
 		case "fromto":
-
 			fromIdx = Integer.parseInt(fromToMatcher.group(1)) - 1;
 			toIdx = Integer.parseInt(fromToMatcher.group(2));
-			break;
-		case "processname":
-			processName = ProcessName.valueOf(argValue.toUpperCase());
-			LOGGER.log(Level.INFO, processName.toString());
 			break;
 		case "skipifexist":
 			skipIfExist = Boolean.parseBoolean(argValue);
@@ -209,6 +198,15 @@ public class Parameters {
 		setEncodeParameter(argName, argValue);
 		setDecodeParameter(argName, argValue);
 		switch (argName.toLowerCase()) {
+		case "maxprocess": // max parallel process
+			maxParallelProcess = Integer.parseInt(argValue);
+			break;
+		case "reportrate":
+			progressReportRate = Long.parseLong(argValue);
+			break;
+		case "processname":
+			processName = ProcessName.valueOf(argValue.toUpperCase());
+			break;
 		case "domainscale":
 		case "AA":
 			domainScale = Integer.parseInt(argValue);
