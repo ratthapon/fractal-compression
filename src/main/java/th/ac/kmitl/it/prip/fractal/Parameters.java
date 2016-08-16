@@ -9,8 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Parameters {
-	private static final Logger LOGGER = Logger.getLogger(Parameters.class
-			.getName());
+	private static final Logger LOGGER = Logger.getLogger(Parameters.class.getName());
 
 	public static enum ProcessName {
 		COMPRESS, DECOMPRESS, DISTRIBUTED_COMPRESS, DISTRIBUTED_DECOMPRESS,
@@ -72,8 +71,7 @@ public class Parameters {
 			toIdx = Files.readAllLines(Paths.get(infile)).size();
 		}
 		if (testName == null) {
-			testName = Paths.get(infile).getFileName().toString()
-					.replaceAll(".txt", "").replaceAll(".fileids", "");
+			testName = Paths.get(infile).getFileName().toString().replaceAll(".txt", "").replaceAll(".fileids", "");
 		}
 		if (outdir == null) {
 			outdir = "..";
@@ -84,12 +82,15 @@ public class Parameters {
 		if (outExtension == null) {
 			outExtension = "bin";
 		}
-		String codeDir = String
-				.format("//FractalCode//%s_R%dto%d_T%s_AA%d_S%d_NCOEF%d_LIMCOEFF%1.1e//",
-						testName, minBlockSize, maxBlockSize,
-						String.format("%1.1e", thresh), domainScale, dStep,
-						nCoeff, coeffLimit);
-		outdir = Paths.get(outdir, codeDir).toAbsolutePath().toString();
+		if (testName == null) {
+			testName = Paths.get(infile).getFileName().toString().replaceAll(".txt", "").replaceAll(".fileids", "");
+			String codeDir = String.format("//%s_R%dto%d_T%s_AA%d_S%d_NCOEF%d_LIMCOEFF%1.1e//", testName, minBlockSize,
+					maxBlockSize, String.format("%1.1e", thresh), domainScale, dStep, nCoeff, coeffLimit);
+			outdir = Paths.get(outdir, codeDir).toAbsolutePath().toString();
+		} else {
+			String codeDir = String.format("//%s//", testName);
+			outdir = Paths.get(outdir, codeDir).toAbsolutePath().toString();
+		}
 		validParams = true;
 	}
 
@@ -97,8 +98,7 @@ public class Parameters {
 		for (String arg : args) {
 			try {
 				String argName = arg.substring(0, arg.indexOf(" "));
-				String argValue = arg.substring(arg.indexOf(" ") + 1,
-						arg.length());
+				String argValue = arg.substring(arg.indexOf(" ") + 1, arg.length());
 				setParameter(argName, argValue);
 			} catch (IndexOutOfBoundsException e) {
 				if ("help".equalsIgnoreCase(arg)) {
@@ -115,8 +115,7 @@ public class Parameters {
 	}
 
 	private void setProjectParameter(String argName, String argValue) {
-		Matcher fromToMatcher = Pattern.compile("(\\d+)-(\\d+)").matcher(
-				argValue);
+		Matcher fromToMatcher = Pattern.compile("(\\d+)-(\\d+)").matcher(argValue);
 		switch (argName.toLowerCase()) {
 		case "testname":
 			testName = argValue;
@@ -137,8 +136,11 @@ public class Parameters {
 			outExtension = argValue;
 			break;
 		case "fromto":
-			fromIdx = Integer.parseInt(fromToMatcher.group(1)) - 1;
-			toIdx = Integer.parseInt(fromToMatcher.group(2));
+			if (Pattern.matches("(\\d+)-(\\d+)", argValue)) {
+				String[] values = argValue.split("-", 2);
+				fromIdx = Integer.parseInt(values[0]) - 1;
+				toIdx = Integer.parseInt(values[1]);
+			}
 			break;
 		case "skipifexist":
 			skipIfExist = Boolean.parseBoolean(argValue);
@@ -214,10 +216,13 @@ public class Parameters {
 		case "ncoeff":
 			nCoeff = Integer.parseInt(argValue);
 			break;
+		case "gpu":
+			gpuEnable = Boolean.parseBoolean(argValue);
+			break;
 		case "h":
 		case "help":
 		default:
-			isHelp = true;
+			isHelp = false;
 		}
 	}
 

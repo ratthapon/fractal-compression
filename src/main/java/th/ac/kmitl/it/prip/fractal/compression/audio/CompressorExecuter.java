@@ -12,13 +12,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.sound.sampled.UnsupportedAudioFileException;
+
 import th.ac.kmitl.it.prip.fractal.DataHandler;
 import th.ac.kmitl.it.prip.fractal.Executer;
 import th.ac.kmitl.it.prip.fractal.compression.audio.gpu.CUCompressor;
 
 public class CompressorExecuter extends Executer {
-	private static final Logger LOGGER = Logger
-			.getLogger(CompressorExecuter.class.getName());
+	private static final Logger LOGGER = Logger.getLogger(CompressorExecuter.class.getName());
 
 	private static AtomicInteger processedSamples = new AtomicInteger(0);
 	private static AtomicInteger processedParts = new AtomicInteger(0);
@@ -32,8 +33,7 @@ public class CompressorExecuter extends Executer {
 			idsList = DataHandler.getIdsPathList(parameters);
 			nameList = DataHandler.getIdsNameList(parameters);
 		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE,
-					"Can not open file list : " + parameters.getInPathPrefix());
+			LOGGER.log(Level.SEVERE, "Can not open file list : " + parameters.getInPathPrefix());
 			throw e;
 		}
 
@@ -48,19 +48,24 @@ public class CompressorExecuter extends Executer {
 			for (int i = 0; i < idsList.length; i++) {
 				final int idsIdx = i;
 				compressorQueue.add(new Callable<double[][]>() {
-					private Compressor compressor;
 
 					@Override
 					public double[][] call() throws Exception {
-						float[] inputAudioData = DataHandler.audioread(
-								idsList[idsIdx], parameters.getInExtension());
-						compressor = getCompressor(inputAudioData);
+						float[] inputAudioData = DataHandler.audioread(idsList[idsIdx], parameters.getInExtension());
+						double[][] codes = null;
+						if (parameters.isGpuEnable()) {
+							// process compressor
+							CUCompressor compressor = new CUCompressor(inputAudioData, parameters);
+							codes = compressor.compress();
+							// logging
+							writeLogs(compressor, idsIdx, nameList, timing, logs);
+						} else {
+							CUCompressor compressor = new CUCompressor(inputAudioData, parameters);
+							codes = compressor.compress();
+							// logging
+							writeLogs(compressor, idsIdx, nameList, timing, logs);
+						}
 
-						// process compressor
-						double[][] codes = compressor.compress();
-
-						// logging
-						writeLogs(compressor, idsIdx, nameList, timing, logs);
 						// store minimum value of self similarity
 						writeFractalCode(idsIdx, codes, nameList, codePathList);
 						return codes;
@@ -76,37 +81,43 @@ public class CompressorExecuter extends Executer {
 		}
 	}
 
-	private static void writeFractalCode(final int idsIdx, double[][] codes,
-			final String[] nameList, List<String> codePathList)
-			throws IOException {
-		// store minimum value of self similarity
-		Paths.get(parameters.getOutdir(), "\\", nameList[idsIdx]).getParent()
-				.toFile().mkdirs();
-		String codeFilePath = Paths.get(parameters.getOutdir(), "\\",
-				nameList[idsIdx]).toString();
-		DataHandler
-				.writecode(codeFilePath, codes, parameters.getOutExtension());
-		codePathList.add(codeFilePath + "." + parameters.getOutExtension());
-		Files.write(Paths.get(parameters.getOutdir(), "\\codelist.txt"),
-				codePathList);
+	public static void exec() throws IOException, UnsupportedAudioFileException, InterruptedException {
+		try {
+			processParameters();
+			LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
+			LOGGER.log(Level.INFO, parameters.toString());
+			if (parameters.isValidParams()) {
+				prepare();
+				estimate(parameters.getProcessName());
+				process();
+			}
+		} catch (IOException | UnsupportedAudioFileException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
+		}
 	}
 
-	private static void writeLogs(Compressor compressor, final int idsIdx,
-			final String[] nameList, List<String> timing, List<String> logs)
-			throws IOException {
+	private static void writeFractalCode(final int idsIdx, double[][] codes, final String[] nameList,
+			List<String> codePathList) throws IOException {
+		// store minimum value of self similarity
+		Paths.get(parameters.getOutdir(), "\\", nameList[idsIdx]).getParent().toFile().mkdirs();
+		String codeFilePath = Paths.get(parameters.getOutdir(), "\\", nameList[idsIdx]).toString();
+		DataHandler.writecode(codeFilePath, codes, parameters.getOutExtension());
+		codePathList.add(codeFilePath + "." + parameters.getOutExtension());
+		Files.write(Paths.get(parameters.getOutdir(), "\\codelist.txt"), codePathList);
+	}
+
+	private static void writeLogs(Compressor compressor, final int idsIdx, final String[] nameList, List<String> timing,
+			List<String> logs) throws IOException {
 		// logging
 		timing.add(idsIdx, String.format("%d", compressor.time()));
-		String log = "Compressed " + idsIdx + " " + nameList[idsIdx]
-				+ " progress " + compressor.countProcessedSamples() + "/"
-				+ compressor.getNSamples() + " part "
-				+ compressor.countProcessedParts() + "/"
-				+ compressor.getNParts() + " time " + compressor.time() / 1000
-				+ " sec";
+		String log = "Compressed " + idsIdx + " " + nameList[idsIdx] + " progress " + compressor.countProcessedSamples()
+				+ "/" + compressor.getNSamples() + " part " + compressor.countProcessedParts() + "/"
+				+ compressor.getNParts() + " time " + compressor.time() / 1000 + " sec";
 		logs.add(log);
 		LOGGER.log(Level.INFO, log);
 		Files.write(Paths.get(parameters.getOutdir(), "\\timing.txt"), timing);
-		Files.write(Paths.get(parameters.getOutdir(), "\\compresslog.txt"),
-				logs);
+		Files.write(Paths.get(parameters.getOutdir(), "\\compresslog.txt"), logs);
 	}
 
 	private CompressorExecuter() {
