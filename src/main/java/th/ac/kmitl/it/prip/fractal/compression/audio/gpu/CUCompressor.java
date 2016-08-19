@@ -294,14 +294,14 @@ public class CUCompressor extends Compressor {
                         nBatch);
                 JCuda.cudaStreamSynchronize(stream);
 
-//                // limit coeff
-//                // Call the kernel function.
-//                blockSizeX = 1024;
-//                gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
-//                JCudaDriver.cuLaunchKernel(limitCoeffKernel, gridSizeX, 1, 1,
-//                        blockSizeX, 1, 1, 0, null, limitCoeffKernelParam, null);
-//                cuCtxSynchronize();
-//                JCuda.cudaStreamSynchronize(stream);
+                // limit coeff
+                // Call the kernel function.
+                blockSizeX = 1024;
+                gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
+                JCudaDriver.cuLaunchKernel(limitCoeffKernel, gridSizeX, 1, 1,
+                        blockSizeX, 1, 1, 0, null, limitCoeffKernelParam, null);
+                cuCtxSynchronize();
+                JCuda.cudaStreamSynchronize(stream);
 
                 // compute SumSquareErr = sum(E.^2)
                 gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);

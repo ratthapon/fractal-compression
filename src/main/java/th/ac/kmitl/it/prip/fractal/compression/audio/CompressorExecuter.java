@@ -60,7 +60,7 @@ public class CompressorExecuter extends Executer {
 							// logging
 							writeLogs(compressor, idsIdx, nameList, timing, logs);
 						} else {
-							CUCompressor compressor = new CUCompressor(inputAudioData, parameters);
+							Compressor compressor = new Compressor(inputAudioData, parameters);
 							codes = compressor.compress();
 							// logging
 							writeLogs(compressor, idsIdx, nameList, timing, logs);
