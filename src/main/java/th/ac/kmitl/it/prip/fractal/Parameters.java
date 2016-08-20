@@ -169,6 +169,10 @@ public class Parameters {
 		case "pthresh":
 			thresh = Float.parseFloat(argValue);
 			break;
+		case "cv":
+		case "usingcv":
+			usingCV = Boolean.parseBoolean(argValue);
+			break;
 		case "step":
 			dStep = Integer.parseInt(argValue);
 			break;
@@ -178,6 +182,10 @@ public class Parameters {
 		case "framelen":
 		case "framelength":
 			frameLength = Integer.parseInt(argValue);
+			break;
+		case "regularize":
+		case "lambda":
+			regularize = Float.parseFloat(argValue);
 			break;
 		default:
 			break;
