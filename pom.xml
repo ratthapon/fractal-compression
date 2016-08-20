@@ -3,7 +3,8 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>th.ac.kmitl.it.prip.fractal.compression.audio</groupId>
 	<artifactId>audio-compressor</artifactId>
-	<version>0.1.4</version>
+	<!-- stage.api version.release.fix -->
+	<version>0.0.0.0</version>
 	<properties>
 		<skipTests>true</skipTests>
 	</properties>
@@ -113,10 +114,42 @@
 		</dependency>
 		<dependency>
 			<groupId>jcuda</groupId>
+			<artifactId>JCudaDriver</artifactId>
+			<version>0.7.5</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/JCudaDriver-windows-x86_64.dll</systemPath>
+			<type>dll</type>
+		</dependency>
+		<dependency>
+			<groupId>jcuda</groupId>
+			<artifactId>JCudaRuntime</artifactId>
+			<version>0.7.5</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/JCudaRuntime-windows-x86_64.dll</systemPath>
+			<type>dll</type>
+		</dependency>
+		<dependency>
+			<groupId>jcuda</groupId>
 			<artifactId>jcublas</artifactId>
 			<version>0.7.5</version>
 			<scope>system</scope>
 			<systemPath>${project.basedir}/lib/jcublas-0.7.5.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>jcuda</groupId>
+			<artifactId>jcublas</artifactId>
+			<version>0.7.5</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/JCublas-windows-x86_64.dll</systemPath>
+			<type>dll</type>
+		</dependency>
+		<dependency>
+			<groupId>jcuda</groupId>
+			<artifactId>jcublas2</artifactId>
+			<version>0.7.5</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/JCublas2-windows-x86_64.dll</systemPath>
+			<type>dll</type>
 		</dependency>
 	</dependencies>
 
