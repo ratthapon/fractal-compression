@@ -11,7 +11,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class TestGPUParameters {
+public class ParametersGPUTest {
 	private String inputParam;
 	private boolean expected;
 
@@ -21,7 +21,7 @@ public class TestGPUParameters {
 				{ "GPU false", false }, });
 	}
 
-	public TestGPUParameters(String inputParam, boolean expectedResult) {
+	public ParametersGPUTest(String inputParam, boolean expectedResult) {
 		this.inputParam = inputParam;
 		this.expected = expectedResult;
 	}
