@@ -3,8 +3,8 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>th.ac.kmitl.it.prip.fractal.compression.audio</groupId>
 	<artifactId>audio-compressor</artifactId>
-	<!-- stage.api version.release.fix -->
-	<version>0.0.0.0</version>
+	<!-- stage . api version . release . fix - may omit this-->
+	<version>0.0.0</version>
 	<properties>
 		<skipTests>true</skipTests>
 	</properties>
