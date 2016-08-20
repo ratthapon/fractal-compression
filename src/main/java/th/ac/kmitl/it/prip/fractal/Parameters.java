@@ -172,6 +172,13 @@ public class Parameters {
 		case "step":
 			dStep = Integer.parseInt(argValue);
 			break;
+		case "overlap":
+			overlap = Integer.parseInt(argValue);
+			break;
+		case "framelen":
+		case "framelength":
+			frameLength = Integer.parseInt(argValue);
+			break;
 		default:
 			break;
 		}
@@ -210,7 +217,7 @@ public class Parameters {
 			processName = ProcessName.valueOf(argValue.toUpperCase());
 			break;
 		case "domainscale":
-		case "AA":
+		case "aa":
 			domainScale = Integer.parseInt(argValue);
 			break;
 		case "ncoeff":
