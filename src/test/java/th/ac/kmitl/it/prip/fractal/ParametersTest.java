@@ -117,7 +117,7 @@ public class ParametersTest {
 		assertEquals(8, parameters.getMaxBlockSize());
 		assertEquals(null, parameters.getInfile());
 
-		assertTrue(ProcessName.COMPRESS == parameters.getProcessName());
+		assertEquals(ProcessName.COMPRESS, parameters.getProcessName());
 		assertTrue("SUBSYNTH48_FIXED_PARTITION_RBS8".equals(parameters.getTestName()));
 		assertTrue("F:\\IFEFSR\\SamplesSpeech\\synth\\8".equals(parameters.getInPathPrefix()));
 		assertTrue("raw".equals(parameters.getInExtension()));

@@ -17,7 +17,7 @@ public class ParametersDecimalTest {
 	private final float EPSILON = 1e-11f;
 
 	@Parameterized.Parameters
-	public static Collection<Object[]> setIntParameters() {
+	public static Collection<Object[]> setDecimalParameters() {
 		return Arrays.asList(new Object[][] { { 1f, 1f }, { 1e-1f, 1e-1f }, { 5e-2f, 5e-2f }, { 1e-5f, 1e-5f },
 				{ -1e-6f, -1e-6f } });
 	}

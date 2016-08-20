@@ -16,7 +16,7 @@ public class ParametersBooleanTest {
 	private boolean expected;
 
 	@Parameterized.Parameters
-	public static Collection<Object[]> setGPUEnable() {
+	public static Collection<Object[]> setBooleanParameters() {
 		return Arrays
 				.asList(new Object[][] { { "true", true }, { "false", false }, { "True", true }, { "false", false }, });
 	}
