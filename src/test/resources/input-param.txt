@@ -10,7 +10,7 @@ pthresh 0
 reportrate 0
 gpu true
 coefflimit 1.2
-skipifexist true
-minr 2
-maxr 2
+skipifexist false
+minr 4
+maxr 4
 

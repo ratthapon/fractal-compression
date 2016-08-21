@@ -155,7 +155,7 @@ public class AudioReadTest {
 
 	@Test
 	public void testAudioReadRawFormat() throws UnsupportedAudioFileException, IOException {
-		String fileDir = "..//AudioCompressor//src//test//resources//expected//synth_wav//";
+		String fileDir = "test-classes//expected//synth_wav//";
 		float[] actualData = DataHandler.audioread(fileDir + input, "raw");
 		assertArrayEquals(this.expected, actualData, 1e-2f);
 	}
