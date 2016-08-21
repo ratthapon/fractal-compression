@@ -1,7 +1,9 @@
 package th.ac.kmitl.it.prip.fractal.compression.audio;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,24 +53,33 @@ public class CompressorExecuter extends Executer {
 
 					@Override
 					public double[][] call() throws Exception {
-						float[] inputAudioData = DataHandler.audioread(idsList[idsIdx], parameters.getInExtension());
+						Path codeFilePath = Paths.get(parameters.getOutdir(), "\\",
+								nameList[idsIdx] + "." + parameters.getOutExtension());
+						File audio = new File(codeFilePath.toString());
 						double[][] codes = null;
-						if (parameters.isGpuEnable()) {
-							// process compressor
-							CUCompressor compressor = new CUCompressor(inputAudioData, parameters);
-							codes = compressor.compress();
-							// logging
-							writeLogs(compressor, idsIdx, nameList, timing, logs);
+						if (audio.exists() && parameters.isSkipIfExist()) {
+							LOGGER.log(Level.INFO, "Skip");
+							return codes;
 						} else {
-							Compressor compressor = new Compressor(inputAudioData, parameters);
-							codes = compressor.compress();
-							// logging
-							writeLogs(compressor, idsIdx, nameList, timing, logs);
-						}
+							float[] inputAudioData = DataHandler.audioread(idsList[idsIdx],
+									parameters.getInExtension());
+							if (parameters.isGpuEnable()) {
+								// process compressor
+								CUCompressor compressor = new CUCompressor(inputAudioData, parameters);
+								codes = compressor.compress();
+								// logging
+								writeLogs(compressor, idsIdx, nameList, timing, logs);
+							} else {
+								Compressor compressor = new Compressor(inputAudioData, parameters);
+								codes = compressor.compress();
+								// logging
+								writeLogs(compressor, idsIdx, nameList, timing, logs);
+							}
 
-						// store minimum value of self similarity
-						writeFractalCode(idsIdx, codes, nameList, codePathList);
-						return codes;
+							// store minimum value of self similarity
+							writeFractalCode(idsIdx, codes, nameList, codePathList);
+							return codes;
+						}
 					}
 				});
 			}
