@@ -1,0 +1,10 @@
+synth-8
+synth-8-20
+synth-8-40
+synth-8-50
+synth-8-70
+synth-16
+synth-16-20
+synth-16-40
+synth-16-50
+synth-16-70

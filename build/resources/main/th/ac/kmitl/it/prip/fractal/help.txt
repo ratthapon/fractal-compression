@@ -1,0 +1,20 @@
+Audio compressor help
+ each input line set the compressor parameter
+  formatt is
+  parameter_name parameter_value
+  
+  parameters name-value pair as follows
+	infile		 - input audio files list (include file extension such as .txt)
+	outdir		 - output fractal codes directory
+	inext		 - audio input file extension without dot (support wav)
+	outext		 - output fractal code file extension without dot (support mat)
+	minpartsize	 - minimal size of range block
+	maxpartsize	 - maximum size of range block
+	pthresh		 - partition threshold (value of wav file should around 1e-4 to 1e-6)
+	step		 - range block sliding step 
+	domainscale	 - domain block size
+	maxprocess	 - maximum cpu threads limit
+	adaptive	 - using adaptive partition (value is true or false)
+	reportrate	 - show compression state in console by time interval (ms)
+	ncoeff		 - number of code coefficient (value should greater than 2)
+	coefflimit	 - possible value range of 2 degree's coefficient (if ncoeff = 2)  

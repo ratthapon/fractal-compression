@@ -1,0 +1,10 @@
+F:\GitRepo\fractal-compression\AudioCompressor\target\test-classes\actual_synth\synth-8.mat
+F:\GitRepo\fractal-compression\AudioCompressor\target\test-classes\actual_synth\synth-8-20.mat
+F:\GitRepo\fractal-compression\AudioCompressor\target\test-classes\actual_synth\synth-8-40.mat
+F:\GitRepo\fractal-compression\AudioCompressor\target\test-classes\actual_synth\synth-8-50.mat
+F:\GitRepo\fractal-compression\AudioCompressor\target\test-classes\actual_synth\synth-8-70.mat
+F:\GitRepo\fractal-compression\AudioCompressor\target\test-classes\actual_synth\synth-16.mat
+F:\GitRepo\fractal-compression\AudioCompressor\target\test-classes\actual_synth\synth-16-20.mat
+F:\GitRepo\fractal-compression\AudioCompressor\target\test-classes\actual_synth\synth-16-40.mat
+F:\GitRepo\fractal-compression\AudioCompressor\target\test-classes\actual_synth\synth-16-50.mat
+F:\GitRepo\fractal-compression\AudioCompressor\target\test-classes\actual_synth\synth-16-70.mat

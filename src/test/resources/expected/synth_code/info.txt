@@ -1,0 +1,20 @@
+Java 1.8.0_91
+Version 1.8.0_91
+Date 2016-08-21T16:54:49.309
+Parameters 
+[  testName = actual_synth
+  infile = F:\GitRepo\fractal-compression\AudioCompressor\target\test-classes\synth-file-list.txt
+  outdir = F:\GitRepo\fractal-compression\AudioCompressor\target\test-classes\actual_synth
+  audioExtension = raw
+  codeExtension = mat
+  minBlockSize = 2
+  maxBlockSize = 2
+  thresh = 0.0
+  domainScale = 2
+  maxParallelProcess = 7
+  adaptivePartition = true
+  dStep = 1
+  nCoeff = 2
+  coeffLimit = 1.2
+  validParams = true  ]
+
