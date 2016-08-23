@@ -39,50 +39,52 @@ public class CompressorExecuter extends Executer {
 			throw e;
 		}
 
-		List<String> codePathList = new ArrayList<String>();
-		List<String> timing = new ArrayList<String>();
-		List<String> logs = new ArrayList<String>();
+		List<String> codePathList = new ArrayList<String>(idsList.length);
+		List<String> timing = new ArrayList<String>(idsList.length);
+		List<String> logs = new ArrayList<String>(idsList.length);
 
 		// single process executor
 		ExecutorService executorService = Executors.newFixedThreadPool(1);
 		List<Callable<double[][]>> compressorQueue = new ArrayList<Callable<double[][]>>();
-		try {
-			for (int i = 0; i < idsList.length; i++) {
-				final int idsIdx = i;
+
+		for (int i = 0; i < idsList.length; i++) {
+			final int idsIdx = i;
+			codePathList.add("");
+			timing.add("");
+			logs.add("");
+			Path codeFilePath = Paths.get(parameters.getOutdir(), "\\",
+					nameList[idsIdx] + "." + parameters.getOutExtension());
+			File audio = new File(codeFilePath.toString());
+			if (audio.exists() && parameters.isSkipIfExist()) {
+				writeSkipLogs(idsIdx, nameList, timing, logs);
+			} else {
 				compressorQueue.add(new Callable<double[][]>() {
 
 					@Override
 					public double[][] call() throws Exception {
-						Path codeFilePath = Paths.get(parameters.getOutdir(), "\\",
-								nameList[idsIdx] + "." + parameters.getOutExtension());
-						File audio = new File(codeFilePath.toString());
 						double[][] codes = null;
-						if (audio.exists() && parameters.isSkipIfExist()) {
-							LOGGER.log(Level.INFO, "Skip");
-							return codes;
+						float[] inputAudioData = DataHandler.audioread(idsList[idsIdx], parameters.getInExtension());
+						if (parameters.isGpuEnable()) {
+							// process compressor
+							CUCompressor compressor = new CUCompressor(inputAudioData, parameters);
+							codes = compressor.compress();
+							// logging
+							writeLogs(compressor, idsIdx, nameList, timing, logs);
 						} else {
-							float[] inputAudioData = DataHandler.audioread(idsList[idsIdx],
-									parameters.getInExtension());
-							if (parameters.isGpuEnable()) {
-								// process compressor
-								CUCompressor compressor = new CUCompressor(inputAudioData, parameters);
-								codes = compressor.compress();
-								// logging
-								writeLogs(compressor, idsIdx, nameList, timing, logs);
-							} else {
-								Compressor compressor = new Compressor(inputAudioData, parameters);
-								codes = compressor.compress();
-								// logging
-								writeLogs(compressor, idsIdx, nameList, timing, logs);
-							}
-
-							// store minimum value of self similarity
-							writeFractalCode(idsIdx, codes, nameList, codePathList);
-							return codes;
+							Compressor compressor = new Compressor(inputAudioData, parameters);
+							codes = compressor.compress();
+							// logging
+							writeLogs(compressor, idsIdx, nameList, timing, logs);
 						}
+
+						// store minimum value of self similarity
+						writeFractalCode(idsIdx, codes, nameList, codePathList);
+						return codes;
 					}
 				});
 			}
+		}
+		try {
 			executorService.invokeAll(compressorQueue);
 		} catch (InterruptedException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
@@ -114,18 +116,29 @@ public class CompressorExecuter extends Executer {
 		Paths.get(parameters.getOutdir(), "\\", nameList[idsIdx]).getParent().toFile().mkdirs();
 		String codeFilePath = Paths.get(parameters.getOutdir(), "\\", nameList[idsIdx]).toString();
 		DataHandler.writecode(codeFilePath, codes, parameters.getOutExtension());
-		codePathList.add(codeFilePath + "." + parameters.getOutExtension());
+		codePathList.set(idsIdx, codeFilePath + "." + parameters.getOutExtension());
 		Files.write(Paths.get(parameters.getOutdir(), "\\codelist.txt"), codePathList);
 	}
 
 	private static void writeLogs(Compressor compressor, final int idsIdx, final String[] nameList, List<String> timing,
 			List<String> logs) throws IOException {
 		// logging
-		timing.add(idsIdx, String.format("%d", compressor.time()));
+		timing.set(idsIdx, String.format("%d", compressor.time()));
 		String log = "Compressed " + idsIdx + " " + nameList[idsIdx] + " progress " + compressor.countProcessedSamples()
 				+ "/" + compressor.getNSamples() + " part " + compressor.countProcessedParts() + "/"
 				+ compressor.getNParts() + " time " + compressor.time() / 1000 + " sec";
-		logs.add(log);
+		logs.set(idsIdx, log);
+		LOGGER.log(Level.INFO, log);
+		Files.write(Paths.get(parameters.getOutdir(), "\\timing.txt"), timing);
+		Files.write(Paths.get(parameters.getOutdir(), "\\compresslog.txt"), logs);
+	}
+
+	private static void writeSkipLogs(final int idsIdx, final String[] nameList, List<String> timing, List<String> logs)
+			throws IOException {
+		// logging
+		timing.set(idsIdx, String.format("%d", 0));
+		String log = "Skiped " + idsIdx + " " + nameList[idsIdx];
+		logs.set(idsIdx, log);
 		LOGGER.log(Level.INFO, log);
 		Files.write(Paths.get(parameters.getOutdir(), "\\timing.txt"), timing);
 		Files.write(Paths.get(parameters.getOutdir(), "\\compresslog.txt"), logs);
