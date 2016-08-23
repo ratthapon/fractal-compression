@@ -13,6 +13,8 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import th.ac.kmitl.it.prip.fractal.dataset.DataSetManager;
+
 @RunWith(Parameterized.class)
 public class CodeWriteTest {
 
@@ -33,7 +35,7 @@ public class CodeWriteTest {
 	@Test
 	public void testMatAudioWrite() throws IOException {
 		File tempFolder = testFolder.newFolder();
-		DataHandler.writecode(tempFolder.getAbsolutePath() + "\\" + input, new double[][] { { 123 } }, "mat");
+		DataSetManager.writecode(tempFolder.getAbsolutePath() + "\\" + input, new double[][] { { 123 } }, "mat");
 		File audioFile = new File(tempFolder.getAbsolutePath() + "\\" + input + ".mat");
 		assertTrue(audioFile.exists());
 	}
@@ -41,7 +43,7 @@ public class CodeWriteTest {
 	@Test
 	public void testBinAudioWrite() throws IOException {
 		File tempFolder = testFolder.newFolder();
-		DataHandler.writecode(tempFolder.getAbsolutePath() + "\\" + input, new double[][] { { 321 } }, "bin");
+		DataSetManager.writecode(tempFolder.getAbsolutePath() + "\\" + input, new double[][] { { 321 } }, "bin");
 		File audioFile = new File(tempFolder.getAbsolutePath() + "\\" + input + ".bin");
 		assertTrue(audioFile.exists());
 	}

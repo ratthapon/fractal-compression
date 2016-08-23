@@ -1,4 +1,4 @@
-package th.ac.kmitl.it.prip.fractal;
+package th.ac.kmitl.it.prip.fractal.dataset;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -30,13 +30,15 @@ import com.jmatio.io.MatFileWriter;
 import com.jmatio.types.MLArray;
 import com.jmatio.types.MLDouble;
 
-public class DataHandler {
-	private static final Logger LOGGER = Logger.getLogger(DataHandler.class
+import th.ac.kmitl.it.prip.fractal.Parameters;
+
+public class DataSetManager {
+	private static final Logger LOGGER = Logger.getLogger(DataSetManager.class
 			.getName());
 
 	final static int RAW_N_BYTES = 2;
 
-	private DataHandler() {
+	private DataSetManager() {
 
 	}
 
@@ -97,7 +99,7 @@ public class DataHandler {
 		List<String> extList = new ArrayList<String>();
 		String newFileName = fileName;
 		try {
-			InputStream in = DataHandler.class
+			InputStream in = DataSetManager.class
 					.getResourceAsStream("supportextension.txt");
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			extList = br.lines().collect(Collectors.toList());
@@ -118,7 +120,7 @@ public class DataHandler {
 			throws IOException {
 		List<String> extList = new ArrayList<String>();
 		try {
-			InputStream in = DataHandler.class
+			InputStream in = DataSetManager.class
 					.getResourceAsStream("supportextension.txt");
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			extList = br.lines().collect(Collectors.toList());

@@ -10,8 +10,8 @@ import java.util.logging.Logger;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
-import th.ac.kmitl.it.prip.fractal.DataHandler;
 import th.ac.kmitl.it.prip.fractal.Executer;
+import th.ac.kmitl.it.prip.fractal.dataset.DataSetManager;
 
 public class DecompressorExecuter extends Executer {
 	private static final Logger LOGGER = Logger.getLogger(DecompressorExecuter.class.getName());
@@ -20,8 +20,8 @@ public class DecompressorExecuter extends Executer {
 		String[] idsList;
 		String[] nameList;
 		try {
-			idsList = DataHandler.getIdsPathList(parameters);
-			nameList = DataHandler.getIdsNameList(parameters);
+			idsList = DataSetManager.getIdsPathList(parameters);
+			nameList = DataSetManager.getIdsNameList(parameters);
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, "Can not open file list : " + parameters.getInPathPrefix());
 			throw e;
@@ -35,7 +35,7 @@ public class DecompressorExecuter extends Executer {
 		for (int idsIdx = 0; idsIdx < idsList.length; idsIdx++) {
 			Decompressor decompressor;
 			LOGGER.log(Level.FINE, "Encall");
-			double[][] codes = DataHandler.codesread(idsList[idsIdx], parameters.getInExtension());
+			double[][] codes = DataSetManager.codesread(idsList[idsIdx], parameters.getInExtension());
 			decompressor = new Decompressor(codes, parameters);
 			LOGGER.log(Level.FINE, "Create decompressor");
 			double[] audioData = decompressor.decompress();
@@ -50,7 +50,7 @@ public class DecompressorExecuter extends Executer {
 			// store minimum value of self similarity
 			Paths.get(parameters.getOutdir(), "\\", nameList[idsIdx]).getParent().toFile().mkdirs();
 			String audioFilePath = Paths.get(parameters.getOutdir(), "\\", nameList[idsIdx]).toString();
-			DataHandler.writeaudio(audioFilePath, audioData, parameters.getOutExtension());
+			DataSetManager.writeaudio(audioFilePath, audioData, parameters.getOutExtension());
 			audioPathList.add(audioFilePath + "." + parameters.getOutExtension());
 			try {
 				Files.write(Paths.get(parameters.getOutdir(), "\\audiolist.txt"), audioPathList);

@@ -16,9 +16,9 @@ import java.util.logging.Logger;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
-import th.ac.kmitl.it.prip.fractal.DataHandler;
 import th.ac.kmitl.it.prip.fractal.Executer;
 import th.ac.kmitl.it.prip.fractal.compression.audio.gpu.CUCompressor;
+import th.ac.kmitl.it.prip.fractal.dataset.DataSetManager;
 
 public class CompressorExecuter extends Executer {
 	private static final Logger LOGGER = Logger.getLogger(CompressorExecuter.class.getName());
@@ -32,8 +32,8 @@ public class CompressorExecuter extends Executer {
 		String[] idsList;
 		String[] nameList;
 		try {
-			idsList = DataHandler.getIdsPathList(parameters);
-			nameList = DataHandler.getIdsNameList(parameters);
+			idsList = DataSetManager.getIdsPathList(parameters);
+			nameList = DataSetManager.getIdsNameList(parameters);
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, "Can not open file list : " + parameters.getInPathPrefix());
 			throw e;
@@ -63,7 +63,7 @@ public class CompressorExecuter extends Executer {
 					@Override
 					public double[][] call() throws Exception {
 						double[][] codes = null;
-						float[] inputAudioData = DataHandler.audioread(idsList[idsIdx], parameters.getInExtension());
+						float[] inputAudioData = DataSetManager.audioread(idsList[idsIdx], parameters.getInExtension());
 						if (parameters.isGpuEnable()) {
 							// process compressor
 							CUCompressor compressor = new CUCompressor(inputAudioData, parameters);
@@ -115,7 +115,7 @@ public class CompressorExecuter extends Executer {
 		// store minimum value of self similarity
 		Paths.get(parameters.getOutdir(), "\\", nameList[idsIdx]).getParent().toFile().mkdirs();
 		String codeFilePath = Paths.get(parameters.getOutdir(), "\\", nameList[idsIdx]).toString();
-		DataHandler.writecode(codeFilePath, codes, parameters.getOutExtension());
+		DataSetManager.writecode(codeFilePath, codes, parameters.getOutExtension());
 		codePathList.set(idsIdx, codeFilePath + "." + parameters.getOutExtension());
 		Files.write(Paths.get(parameters.getOutdir(), "\\codelist.txt"), codePathList);
 	}

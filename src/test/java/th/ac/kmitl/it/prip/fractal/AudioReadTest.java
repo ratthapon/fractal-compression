@@ -12,6 +12,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import th.ac.kmitl.it.prip.fractal.dataset.DataSetManager;
+
 @RunWith(Parameterized.class)
 public class AudioReadTest {
 	private String input;
@@ -156,7 +158,7 @@ public class AudioReadTest {
 	@Test
 	public void testAudioReadRawFormat() throws UnsupportedAudioFileException, IOException {
 		String fileDir = "test-classes//expected//synth_wav//";
-		float[] actualData = DataHandler.audioread(fileDir + input, "raw");
+		float[] actualData = DataSetManager.audioread(fileDir + input, "raw");
 		assertArrayEquals(this.expected, actualData, 1e-2f);
 	}
 

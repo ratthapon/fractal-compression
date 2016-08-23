@@ -19,6 +19,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import th.ac.kmitl.it.prip.fractal.Parameters;
 import th.ac.kmitl.it.prip.fractal.Parameters.ProcessName;
 import th.ac.kmitl.it.prip.fractal.compression.audio.Compressor;
+import th.ac.kmitl.it.prip.fractal.dataset.DataSetManager;
 import th.ac.kmitl.it.prip.fractal.decompression.audio.Decompressor;
 
 public abstract class Executer {
@@ -109,7 +110,7 @@ public abstract class Executer {
 		// estimate runtime
 		String[] idsList = null;
 		try {
-			idsList = DataHandler.getIdsPathList(parameters);
+			idsList = DataSetManager.getIdsPathList(parameters);
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE,
 					"Can not open files list : " + parameters.getInfile());
@@ -118,14 +119,14 @@ public abstract class Executer {
 		for (int i = 0; i < idsList.length; i++) {
 			try {
 				if (processName.equals(ProcessName.COMPRESS)) {
-					float[] inputAudioData = DataHandler.audioread(idsList[i],
+					float[] inputAudioData = DataSetManager.audioread(idsList[i],
 							parameters.getInExtension());
 					Compressor compressor = new Compressor(inputAudioData,
 							parameters);
 					nSamples += compressor.getNSamples();
 					nParts += compressor.getNParts();
 				} else if (processName.equals(ProcessName.DECOMPRESS)) {
-					double[][] codes = DataHandler.codesread(idsList[i],
+					double[][] codes = DataSetManager.codesread(idsList[i],
 							parameters.getInExtension());
 					Decompressor decompressor = new Decompressor(codes,
 							parameters);
