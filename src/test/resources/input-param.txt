@@ -13,4 +13,3 @@ coefflimit 1.2
 skipifexist false
 minr 4
 maxr 4
-

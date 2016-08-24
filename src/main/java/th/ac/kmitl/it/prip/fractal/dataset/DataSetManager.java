@@ -16,7 +16,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -397,23 +396,27 @@ public class DataSetManager implements DataSetAPIv1 {
 
 	@Override
 	public float[] readAudio(int index) throws UnsupportedAudioFileException, IOException {
-		return audioread(parameters.getInPathPrefix() + nameList[index], parameters.getInExtension());
+		return audioread(Paths.get(parameters.getInPathPrefix(), nameList[index]).toString(),
+				parameters.getInExtension());
 	}
 
 	@Override
 	public boolean writeAudio(int index, double[] audioData) throws IOException {
-		writeaudio(parameters.getOutdir() + nameList[index], audioData, parameters.getOutExtension());
+		writeaudio(Paths.get(parameters.getOutdir(), nameList[index]).toString(), audioData,
+				parameters.getOutExtension());
 		return true;
 	}
 
 	@Override
 	public double[][] readCode(int index) throws FileNotFoundException, IOException {
-		return codesread(parameters.getOutdir() + nameList[index], parameters.getInExtension());
+		return codesread(Paths.get(parameters.getInPathPrefix(), nameList[index]).toString(),
+				parameters.getInExtension());
 	}
 
 	@Override
 	public boolean writeCode(int index, double[][] codeData) throws IOException {
-		writecode(parameters.getOutdir() + nameList[index], codeData, parameters.getOutExtension());
+		writecode(Paths.get(parameters.getOutdir(), nameList[index]).toString(), codeData,
+				parameters.getOutExtension());
 		return true;
 	}
 
@@ -437,7 +440,7 @@ public class DataSetManager implements DataSetAPIv1 {
 			info.add("Version " + Executors.class.getPackage().getImplementationVersion());
 			info.add("Date " + LocalDateTime.now());
 			info.add(parameters.toString());
-			Files.write(Paths.get(parameters.getOutdir(), "\\info.txt"), info);
+			Files.write(Paths.get(parameters.getOutdir(), "info.txt"), info);
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
 			throw e;
@@ -466,7 +469,7 @@ public class DataSetManager implements DataSetAPIv1 {
 			idsArrays = removeExtension(nameList);
 			for (int i = 0; i < idsArrays.length; i++) {
 				if (parameters.getInPathPrefix().length() > 0) {
-					pathsList.add(Paths.get(parameters.getInPathPrefix() + "\\" + idsArrays[i]).toString());
+					pathsList.add(Paths.get(parameters.getInPathPrefix(), idsArrays[i]).toString());
 				} else {
 					pathsList.add(Paths.get(idsArrays[i]).toString());
 				}

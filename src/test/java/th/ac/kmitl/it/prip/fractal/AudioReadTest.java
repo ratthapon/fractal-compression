@@ -1,6 +1,6 @@
 package th.ac.kmitl.it.prip.fractal;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 import java.io.IOException;
 import java.util.Arrays;
