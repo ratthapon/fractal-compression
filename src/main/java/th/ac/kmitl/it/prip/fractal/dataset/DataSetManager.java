@@ -12,9 +12,13 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -32,14 +36,41 @@ import com.jmatio.types.MLDouble;
 
 import th.ac.kmitl.it.prip.fractal.Parameters;
 
-public class DataSetManager {
-	private static final Logger LOGGER = Logger.getLogger(DataSetManager.class
-			.getName());
+public class DataSetManager implements DataSetAPIv1 {
+	private static final Logger LOGGER = Logger.getLogger(DataSetManager.class.getName());
 
-	final static int RAW_N_BYTES = 2;
+	final static int SAMPLE_BYTE_SIZE = 2;
 
-	private DataSetManager() {
+	private String[] nameList;
+	private List<String> timing;
+	private List<String> completed;
+	private Parameters parameters;
 
+	public DataSetManager(Parameters parameters) throws IOException {
+		this.parameters = parameters;
+		Paths.get(parameters.getOutdir()).toFile().mkdirs();
+
+		this.nameList = getIdsNameList();
+
+		Path timingLogPath = Paths.get(parameters.getOutdir(), "timelog.txt");
+		if (timingLogPath.toFile().exists()) {
+			timing = Files.readAllLines(timingLogPath);
+		} else {
+			timing = new ArrayList<>(nameList.length);
+			for (int i = 0; i < nameList.length; i++) {
+				timing.add("");
+			}
+		}
+
+		Path completedLogPath = Paths.get(parameters.getOutdir(), "completedlog.txt");
+		if (completedLogPath.toFile().exists()) {
+			completed = Files.readAllLines(completedLogPath);
+		} else {
+			completed = new ArrayList<>(nameList.length);
+			for (int i = 0; i < nameList.length; i++) {
+				completed.add("");
+			}
+		}
 	}
 
 	/**
@@ -48,38 +79,29 @@ public class DataSetManager {
 	 * @return audio paths
 	 * @throws IOException
 	 */
-	public static String[] getIdsPathList(Parameters parameters)
-			throws IOException {
-		String[] idsArrays = new String[0];
+	private List<String> getIdsPathList() throws IOException {
+		List<String> pathsList = new ArrayList<String>();
 		try {
-			List<String> idsList = Files.readAllLines(Paths.get(parameters
-					.getInfile()));
-			idsArrays = new String[idsList.size()];
-			idsList.toArray(idsArrays);
-			idsArrays = removeExtension(idsArrays);
+			String[] idsArrays = new String[nameList.length];
+			idsArrays = removeExtension(nameList);
 			for (int i = 0; i < idsArrays.length; i++) {
 				if (parameters.getInPathPrefix().length() > 0) {
-					idsArrays[i] = Paths.get(
-							parameters.getInPathPrefix() + "\\" + idsArrays[i])
-							.toString();
+					pathsList.add(Paths.get(parameters.getInPathPrefix() + "\\" + idsArrays[i]).toString());
 				} else {
-					idsArrays[i] = Paths.get(idsArrays[i]).toString();
+					pathsList.add(Paths.get(idsArrays[i]).toString());
 				}
-
 			}
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
 			throw e;
 		}
-		return idsArrays;
+		return pathsList;
 	}
 
-	public static String[] getIdsNameList(Parameters parameters)
-			throws IOException {
+	private String[] getIdsNameList() throws IOException {
 		String[] idsArrays = new String[0];
 		try {
-			List<String> idsList = Files.readAllLines(Paths.get(parameters
-					.getInfile()));
+			List<String> idsList = Files.readAllLines(Paths.get(parameters.getInfile()));
 			idsArrays = new String[idsList.size()];
 			idsList.toArray(idsArrays);
 			idsArrays = removeExtension(idsArrays);
@@ -99,8 +121,7 @@ public class DataSetManager {
 		List<String> extList = new ArrayList<String>();
 		String newFileName = fileName;
 		try {
-			InputStream in = DataSetManager.class
-					.getResourceAsStream("supportextension.txt");
+			InputStream in = DataSetManager.class.getResourceAsStream("supportextension.txt");
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			extList = br.lines().collect(Collectors.toList());
 			for (String ext : extList) {
@@ -116,12 +137,10 @@ public class DataSetManager {
 		return newFileName;
 	}
 
-	private static String[] removeExtension(String[] fileName)
-			throws IOException {
+	private static String[] removeExtension(String[] fileName) throws IOException {
 		List<String> extList = new ArrayList<String>();
 		try {
-			InputStream in = DataSetManager.class
-					.getResourceAsStream("supportextension.txt");
+			InputStream in = DataSetManager.class.getResourceAsStream("supportextension.txt");
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			extList = br.lines().collect(Collectors.toList());
 			in.close();
@@ -166,8 +185,7 @@ public class DataSetManager {
 		return audioArrays;
 	}
 
-	public static double[][] codesread(String fileName, String extension)
-			throws FileNotFoundException, IOException {
+	public static double[][] codesread(String fileName, String extension) throws FileNotFoundException, IOException {
 		double[][] codes = null;
 		try {
 			switch (extension) {
@@ -191,8 +209,7 @@ public class DataSetManager {
 		return codes;
 	}
 
-	public static void writecode(String fileName, double[][] codeData,
-			String codeExtention) throws IOException {
+	public static void writecode(String fileName, double[][] codeData, String codeExtention) throws IOException {
 		try {
 			switch (codeExtention) {
 			case "mat":
@@ -208,8 +225,7 @@ public class DataSetManager {
 		}
 	}
 
-	public static void writeaudio(String fileName, double[] audioData,
-			String audioExtension) throws IOException {
+	public static void writeaudio(String fileName, double[] audioData, String audioExtension) throws IOException {
 		try {
 			switch (audioExtension) {
 			case "raw":
@@ -225,13 +241,12 @@ public class DataSetManager {
 		}
 	}
 
-	public static void writeaudio(String fileName, double[] audioData,
-			String audioExtension, int sampleRate) throws IOException {
+	public static void writeaudio(String fileName, double[] audioData, String audioExtension, int sampleRate)
+			throws IOException {
 		try {
 			switch (audioExtension) {
 			case "raw":
-				writeToWav(fileName + "." + audioExtension, audioData,
-						sampleRate);
+				writeToWav(fileName + "." + audioExtension, audioData, sampleRate);
 				break;
 
 			default:
@@ -249,8 +264,7 @@ public class DataSetManager {
 			FileInputStream fis = new FileInputStream(fileName);
 			byte[] buffer = new byte[fis.available()];
 			fis.read(buffer);
-			ShortBuffer ib = ByteBuffer.wrap(buffer)
-					.order(ByteOrder.LITTLE_ENDIAN).asShortBuffer(); //
+			ShortBuffer ib = ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer(); //
 			short[] shortBuffer = new short[ib.capacity()];
 			ib.get(shortBuffer);
 			audioData = new float[shortBuffer.length];
@@ -266,8 +280,7 @@ public class DataSetManager {
 		return audioData;
 	}
 
-	private static float[] wavToDat(String fileName)
-			throws UnsupportedAudioFileException, IOException {
+	private static float[] wavToDat(String fileName) throws UnsupportedAudioFileException, IOException {
 		float[] audioData = null;
 		File file;
 		AudioInputStream ais;
@@ -293,8 +306,7 @@ public class DataSetManager {
 				ais.read(audioBytes);
 				double leftChannel = ((audioBytes[0] & 0xFF) | (audioBytes[1] << 8)) / 32768.0;
 				if (leftChannel < 1) {
-					audioData[frameIdx] = (float) (leftChannel * Math
-							.pow(2, 15));
+					audioData[frameIdx] = (float) (leftChannel * Math.pow(2, 15));
 				}
 				frameIdx += 1;
 			}
@@ -306,8 +318,7 @@ public class DataSetManager {
 		return audioData;
 	}
 
-	private static double[][] matToCodes(String fileName) throws IOException,
-			FileNotFoundException {
+	private static double[][] matToCodes(String fileName) throws IOException, FileNotFoundException {
 		double[][] codes = null;
 		try {
 			MatFileReader mfr = new MatFileReader(fileName);
@@ -324,22 +335,19 @@ public class DataSetManager {
 
 	@SuppressWarnings("unused")
 	private static double[][] binToCodes(String fileName) {
-		LOGGER.log(Level.WARNING, "Can not open " + fileName
-				+ ". This api does not implement yet.");
+		LOGGER.log(Level.WARNING, "Can not open " + fileName + ". This api does not implement yet.");
 		return new double[0][0];
 	}
 
-	private static void writeToRaw(String fileName, double[] audioData)
-			throws IOException {
+	private static void writeToRaw(String fileName, double[] audioData) throws IOException {
 		try {
 
 			short[] shortBuffer = new short[audioData.length];
 			for (int i = 0; i < shortBuffer.length; i++) {
 				shortBuffer[i] = (short) audioData[i];
 			}
-			ByteBuffer buffer = ByteBuffer.allocate(
-					shortBuffer.length * RAW_N_BYTES).order(
-					ByteOrder.LITTLE_ENDIAN);
+			ByteBuffer buffer = ByteBuffer.allocate(shortBuffer.length * SAMPLE_BYTE_SIZE)
+					.order(ByteOrder.LITTLE_ENDIAN);
 			buffer.asShortBuffer().put(shortBuffer);
 			Files.write(Paths.get(fileName), buffer.array());
 		} catch (IOException e) {
@@ -348,8 +356,7 @@ public class DataSetManager {
 		}
 	}
 
-	private static void writeToMat(String fileName, double[][] codeData)
-			throws IOException {
+	private static void writeToMat(String fileName, double[][] codeData) throws IOException {
 		String varName = "f";
 		MLDouble mlDouble = new MLDouble(varName, codeData);
 
@@ -366,8 +373,7 @@ public class DataSetManager {
 		}
 	}
 
-	private static void writeToWav(String fileName, double[] audioData,
-			int sampleRate) throws IOException {
+	private static void writeToWav(String fileName, double[] audioData, int sampleRate) throws IOException {
 		final boolean bigEndian = false;
 		final int nBit = 16;
 		final int nCH = 1;
@@ -377,19 +383,110 @@ public class DataSetManager {
 			for (int i = 0; i < valueBuffer.length; i++) {
 				valueBuffer[i] = (short) ((audioData[i] / Math.pow(2, 15)) * Short.MAX_VALUE);
 			}
-			ByteBuffer.wrap(byteBuffer).order(ByteOrder.LITTLE_ENDIAN)
-					.asShortBuffer().put(valueBuffer);
+			ByteBuffer.wrap(byteBuffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(valueBuffer);
 			ByteArrayInputStream bais = new ByteArrayInputStream(byteBuffer);
-			AudioFormat format = new AudioFormat((float) sampleRate, nBit, nCH,
-					true, bigEndian);
-			AudioInputStream ais = new AudioInputStream(bais, format,
-					byteBuffer.length);
-			AudioSystem.write(ais, AudioFileFormat.Type.WAVE,
-					Paths.get(fileName).toFile());
+			AudioFormat format = new AudioFormat((float) sampleRate, nBit, nCH, true, bigEndian);
+			AudioInputStream ais = new AudioInputStream(bais, format, byteBuffer.length);
+			AudioSystem.write(ais, AudioFileFormat.Type.WAVE, Paths.get(fileName).toFile());
 			ais.close();
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
 			throw e;
 		}
+	}
+
+	@Override
+	public float[] readAudio(int index) throws UnsupportedAudioFileException, IOException {
+		return audioread(parameters.getInPathPrefix() + nameList[index], parameters.getInExtension());
+	}
+
+	@Override
+	public boolean writeAudio(int index, double[] audioData) throws IOException {
+		writeaudio(parameters.getOutdir() + nameList[index], audioData, parameters.getOutExtension());
+		return true;
+	}
+
+	@Override
+	public double[][] readCode(int index) throws FileNotFoundException, IOException {
+		return codesread(parameters.getOutdir() + nameList[index], parameters.getInExtension());
+	}
+
+	@Override
+	public boolean writeCode(int index, double[][] codeData) throws IOException {
+		writecode(parameters.getOutdir() + nameList[index], codeData, parameters.getOutExtension());
+		return true;
+	}
+
+	@Override
+	public boolean updateTimingLog(int index, int time) throws IOException {
+		Files.write(Paths.get(parameters.getOutdir(), "\\timelog.txt"), timing);
+		return true;
+	}
+
+	@Override
+	public boolean updateCompletedLog(int index, String logString) throws IOException {
+		Files.write(Paths.get(parameters.getOutdir(), "\\completedlog.txt"), completed);
+		return true;
+	}
+
+	@Override
+	public boolean writeInfo() throws IOException {
+		List<String> info = new ArrayList<>();
+		try {
+			info.add("Java " + System.getProperty("java.version"));
+			info.add("Version " + Executors.class.getPackage().getImplementationVersion());
+			info.add("Date " + LocalDateTime.now());
+			info.add(parameters.toString());
+			Files.write(Paths.get(parameters.getOutdir(), "\\info.txt"), info);
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
+		}
+		return true;
+	}
+
+	@Override
+	public boolean writeParameters() throws IOException {
+		List<String> parameter = new ArrayList<>();
+		try {
+			parameter.add(parameters.toString());
+			Files.write(Paths.get(parameters.getOutdir(), "\\parameters.txt"), parameter);
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
+		}
+		return true;
+	}
+
+	@Override
+	public boolean writeOutputPaths() throws IOException {
+		List<String> pathsList = new ArrayList<String>();
+		try {
+			String[] idsArrays = new String[nameList.length];
+			idsArrays = removeExtension(nameList);
+			for (int i = 0; i < idsArrays.length; i++) {
+				if (parameters.getInPathPrefix().length() > 0) {
+					pathsList.add(Paths.get(parameters.getInPathPrefix() + "\\" + idsArrays[i]).toString());
+				} else {
+					pathsList.add(Paths.get(idsArrays[i]).toString());
+				}
+			}
+			Files.write(Paths.get(parameters.getOutdir(), "\\pathslist.txt"), pathsList);
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
+		}
+		return true;
+	}
+
+	@Override
+	public int estimateNumSamples() throws IOException {
+		int numSample = 0;
+		for (int i = 0; i < nameList.length; i++) {
+			FileInputStream fis = new FileInputStream(nameList[0]);
+			numSample = numSample + fis.available() / SAMPLE_BYTE_SIZE;
+			fis.close();
+		}
+		return numSample;
 	}
 }
