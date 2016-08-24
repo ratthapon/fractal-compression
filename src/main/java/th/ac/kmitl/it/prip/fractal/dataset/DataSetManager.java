@@ -116,7 +116,7 @@ public class DataSetManager implements DataSetAPIv1 {
 	}
 
 	@SuppressWarnings("unused")
-	private static String removeExtension(String fileName) throws IOException {
+	private String removeExtension(String fileName) throws IOException {
 		List<String> extList = new ArrayList<String>();
 		String newFileName = fileName;
 		try {
@@ -136,7 +136,7 @@ public class DataSetManager implements DataSetAPIv1 {
 		return newFileName;
 	}
 
-	private static String[] removeExtension(String[] fileName) throws IOException {
+	private String[] removeExtension(String[] fileName) throws IOException {
 		List<String> extList = new ArrayList<String>();
 		try {
 			InputStream in = DataSetManager.class.getResourceAsStream("supportextension.txt");
@@ -156,8 +156,7 @@ public class DataSetManager implements DataSetAPIv1 {
 		return fileName;
 	}
 
-	public static float[] audioread(String fileName, String extension)
-			throws UnsupportedAudioFileException, IOException {
+	private float[] audioread(String fileName, String extension) throws UnsupportedAudioFileException, IOException {
 
 		float[] audioArrays = null;
 
@@ -184,7 +183,7 @@ public class DataSetManager implements DataSetAPIv1 {
 		return audioArrays;
 	}
 
-	public static double[][] codesread(String fileName, String extension) throws FileNotFoundException, IOException {
+	private double[][] codesread(String fileName, String extension) throws FileNotFoundException, IOException {
 		double[][] codes = null;
 		try {
 			switch (extension) {
@@ -208,7 +207,7 @@ public class DataSetManager implements DataSetAPIv1 {
 		return codes;
 	}
 
-	public static void writecode(String fileName, double[][] codeData, String codeExtention) throws IOException {
+	private void writecode(String fileName, double[][] codeData, String codeExtention) throws IOException {
 		try {
 			switch (codeExtention) {
 			case "mat":
@@ -224,7 +223,7 @@ public class DataSetManager implements DataSetAPIv1 {
 		}
 	}
 
-	public static void writeaudio(String fileName, double[] audioData, String audioExtension) throws IOException {
+	private void writeaudio(String fileName, double[] audioData, String audioExtension) throws IOException {
 		try {
 			switch (audioExtension) {
 			case "raw":
@@ -240,7 +239,7 @@ public class DataSetManager implements DataSetAPIv1 {
 		}
 	}
 
-	public static void writeaudio(String fileName, double[] audioData, String audioExtension, int sampleRate)
+	private void writeaudio(String fileName, double[] audioData, String audioExtension, int sampleRate)
 			throws IOException {
 		try {
 			switch (audioExtension) {
@@ -257,7 +256,7 @@ public class DataSetManager implements DataSetAPIv1 {
 		}
 	}
 
-	private static float[] rawToDat(String fileName) throws IOException {
+	private float[] rawToDat(String fileName) throws IOException {
 		float[] audioData = null;
 		try {
 			FileInputStream fis = new FileInputStream(fileName);
@@ -279,7 +278,7 @@ public class DataSetManager implements DataSetAPIv1 {
 		return audioData;
 	}
 
-	private static float[] wavToDat(String fileName) throws UnsupportedAudioFileException, IOException {
+	private float[] wavToDat(String fileName) throws UnsupportedAudioFileException, IOException {
 		float[] audioData = null;
 		File file;
 		AudioInputStream ais;
@@ -317,7 +316,7 @@ public class DataSetManager implements DataSetAPIv1 {
 		return audioData;
 	}
 
-	private static double[][] matToCodes(String fileName) throws IOException, FileNotFoundException {
+	private double[][] matToCodes(String fileName) throws IOException, FileNotFoundException {
 		double[][] codes = null;
 		try {
 			MatFileReader mfr = new MatFileReader(fileName);
@@ -333,12 +332,12 @@ public class DataSetManager implements DataSetAPIv1 {
 	}
 
 	@SuppressWarnings("unused")
-	private static double[][] binToCodes(String fileName) {
+	private double[][] binToCodes(String fileName) {
 		LOGGER.log(Level.WARNING, "Can not open " + fileName + ". This api does not implement yet.");
 		return new double[0][0];
 	}
 
-	private static void writeToRaw(String fileName, double[] audioData) throws IOException {
+	private void writeToRaw(String fileName, double[] audioData) throws IOException {
 		try {
 
 			short[] shortBuffer = new short[audioData.length];
@@ -355,7 +354,7 @@ public class DataSetManager implements DataSetAPIv1 {
 		}
 	}
 
-	private static void writeToMat(String fileName, double[][] codeData) throws IOException {
+	private void writeToMat(String fileName, double[][] codeData) throws IOException {
 		String varName = "f";
 		MLDouble mlDouble = new MLDouble(varName, codeData);
 
@@ -372,7 +371,7 @@ public class DataSetManager implements DataSetAPIv1 {
 		}
 	}
 
-	private static void writeToWav(String fileName, double[] audioData, int sampleRate) throws IOException {
+	private void writeToWav(String fileName, double[] audioData, int sampleRate) throws IOException {
 		final boolean bigEndian = false;
 		final int nBit = 16;
 		final int nCH = 1;
