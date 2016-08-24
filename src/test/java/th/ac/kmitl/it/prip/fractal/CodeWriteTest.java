@@ -36,16 +36,16 @@ public class CodeWriteTest {
 	public void testMatAudioWrite() throws IOException {
 		File tempFolder = testFolder.newFolder();
 		DataSetManager.writecode(tempFolder.getAbsolutePath() + "\\" + input, new double[][] { { 123 } }, "mat");
-		File audioFile = new File(tempFolder.getAbsolutePath() + "\\" + input + ".mat");
-		assertTrue(audioFile.exists());
+		File codeFile = new File(tempFolder.getAbsolutePath() + "\\" + input + ".mat");
+		assertTrue(codeFile.exists());
 	}
 
 	@Test
 	public void testBinAudioWrite() throws IOException {
 		File tempFolder = testFolder.newFolder();
 		DataSetManager.writecode(tempFolder.getAbsolutePath() + "\\" + input, new double[][] { { 321 } }, "bin");
-		File audioFile = new File(tempFolder.getAbsolutePath() + "\\" + input + ".bin");
-		assertTrue(audioFile.exists());
+		File codeFile = new File(tempFolder.getAbsolutePath() + "\\" + input + ".bin");
+		assertTrue(codeFile.exists());
 	}
 
 }
