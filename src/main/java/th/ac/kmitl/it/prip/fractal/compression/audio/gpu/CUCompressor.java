@@ -37,8 +37,6 @@ public class CUCompressor extends Compressor {
     private static final Logger LOGGER = Logger.getLogger(CUCompressor.class
             .getName());
 
-    private float[] data = null;
-
     public CUCompressor(float[] inputAudioData, Parameters compressParameters) {
         super(inputAudioData, compressParameters);
         data = new float[inputAudioData.length];

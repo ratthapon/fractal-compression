@@ -3,6 +3,8 @@ package th.ac.kmitl.it.prip.fractal.compression.audio;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,15 +21,41 @@ import th.ac.kmitl.it.prip.fractal.dataset.DataSetManager;
 
 public class ProcessDispatcher extends Executer {
 	private static final Logger LOGGER = Logger.getLogger(ProcessDispatcher.class.getName());
-	protected static final String[] UNITS = { "", "k", "M", "G", "T", "P" };
+	public static final String[] UNITS = { "", "k", "M", "G", "T", "P" };
 
-	private static AtomicInteger processedSamples = new AtomicInteger(0);
-	private static AtomicInteger processedParts = new AtomicInteger(0);
-	private static AtomicInteger passedNSamples = new AtomicInteger(0);
-	private static AtomicInteger passedNParts = new AtomicInteger(0);
+	private AtomicInteger processedSamples = new AtomicInteger(0);
+	private AtomicInteger processedParts = new AtomicInteger(0);
+	private AtomicInteger passedNSamples = new AtomicInteger(0);
+	private AtomicInteger passedNParts = new AtomicInteger(0);
+	private AtomicInteger samplesCounter = new AtomicInteger(0);
+	private AtomicInteger partsCounter = new AtomicInteger(0);
 	private DataSetManager dataSetManager;
 
-	protected void dispatch() throws IOException, InterruptedException {
+	private static int samplesCompressSpeed; // samples per sec
+	private static int partsCompressSpeed; // parts per sec
+
+	private TimerTask estimateSpeed = new TimerTask() {
+
+		@Override
+		public void run() {
+
+			samplesCompressSpeed = (samplesCounter.get() - passedNSamples.get()) / (Executer.DELTA_TIME / 1000);
+			passedNSamples.set(samplesCounter.get());
+
+			partsCompressSpeed = (partsCounter.get() - passedNParts.get()) / (Executer.DELTA_TIME / 1000);
+			passedNParts.set(partsCounter.get());
+		}
+	};
+	private TimerTask printState = new TimerTask() {
+
+		@Override
+		public void run() {
+			LOGGER.log(Level.INFO,
+					" Speed " + samplesCompressSpeed + " samples/sec " + partsCompressSpeed + " parts/sec");
+		}
+	};
+
+	private void dispatch() throws IOException, InterruptedException {
 		// single process executor
 		ExecutorService executorService = Executors.newFixedThreadPool(1);
 		List<Callable<double[][]>> compressorQueue = new ArrayList<Callable<double[][]>>();
@@ -47,12 +75,16 @@ public class ProcessDispatcher extends Executer {
 						if (parameters.isGpuEnable()) {
 							// process compressor
 							CUCompressor compressor = new CUCompressor(inputAudioData, parameters);
+							compressor.registerPartCount(partsCounter);
+							compressor.registerSampleCount(samplesCounter);
 							codes = compressor.compress();
 							// logging
 
 							writeLogs(compressor, idsIdx);
 						} else {
 							Compressor compressor = new Compressor(inputAudioData, parameters);
+							compressor.registerPartCount(partsCounter);
+							compressor.registerSampleCount(samplesCounter);
 							codes = compressor.compress();
 							// logging
 							writeLogs(compressor, idsIdx);
@@ -75,7 +107,7 @@ public class ProcessDispatcher extends Executer {
 		}
 	}
 
-	protected void estimate() throws IOException, UnsupportedAudioFileException {
+	private void estimate() throws IOException, UnsupportedAudioFileException {
 		int nSamples = dataSetManager.estimateNumSamples();
 		int samplesUnit = (int) (Math.log10(nSamples) / 3);
 		LOGGER.log(Level.INFO, String.format("Expect %d %s samples", (int) (nSamples / Math.pow(10, samplesUnit * 3)),
@@ -83,6 +115,8 @@ public class ProcessDispatcher extends Executer {
 	}
 
 	public void exec() throws IOException, UnsupportedAudioFileException, InterruptedException {
+		Timer speedEstimator = new Timer();
+		Timer printTimer = null;
 		try {
 			processParameters();
 			LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
@@ -90,20 +124,33 @@ public class ProcessDispatcher extends Executer {
 			if (parameters.isValidParams()) {
 				prepare();
 				estimate();
+
+				// start speed estimation
+				speedEstimator.scheduleAtFixedRate(estimateSpeed, 0, Executer.DELTA_TIME);
+
+				// progress report
+				if (parameters.getProgressReportRate() > 0) {
+					printTimer = new Timer();
+					printTimer.scheduleAtFixedRate(printState, 0, parameters.getProgressReportRate());
+				}
+
 				dispatch();
 			}
 		} catch (IOException | UnsupportedAudioFileException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
 			throw e;
 		}
+		speedEstimator.cancel();
+		if (printTimer != null) {
+			printTimer.cancel();
+		}
 	}
 
 	private void writeLogs(Compressor compressor, final int idsIdx) throws IOException {
 		// logging
 		String log = "Compressed " + idsIdx + " " + dataSetManager.getName(idsIdx) + " progress "
-				+ compressor.countProcessedSamples() + "/" + compressor.getNSamples() + " part "
-				+ compressor.countProcessedParts() + "/" + compressor.getNParts() + " time " + compressor.time() / 1000
-				+ " sec";
+				+ compressor.getNSamples() + "/" + compressor.getNSamples() + " part " + compressor.getNParts() + "/"
+				+ compressor.getNParts() + " time " + compressor.time() / 1000 + " sec";
 		LOGGER.log(Level.INFO, log);
 		dataSetManager.updateTimingLog(idsIdx, compressor.time());
 		dataSetManager.updateCompletedLog(idsIdx, log);
@@ -113,19 +160,19 @@ public class ProcessDispatcher extends Executer {
 		this.dataSetManager = new DataSetManager(parameters);
 	}
 
-	public static AtomicInteger getProcessedSamples() {
+	public AtomicInteger getProcessedSamples() {
 		return processedSamples;
 	}
 
-	public static AtomicInteger getProcessedParts() {
+	public AtomicInteger getProcessedParts() {
 		return processedParts;
 	}
 
-	public static AtomicInteger getPassedNSamples() {
+	public AtomicInteger getPassedNSamples() {
 		return passedNSamples;
 	}
 
-	public static AtomicInteger getPassedNParts() {
+	public AtomicInteger getPassedNParts() {
 		return passedNParts;
 	}
 }

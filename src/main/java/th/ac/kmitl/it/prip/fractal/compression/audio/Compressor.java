@@ -3,8 +3,6 @@ package th.ac.kmitl.it.prip.fractal.compression.audio;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -18,15 +16,16 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
 
-import th.ac.kmitl.it.prip.fractal.Executer;
 import th.ac.kmitl.it.prip.fractal.Parameters;
 
 public class Compressor {
-	private static final Logger LOGGER = Logger.getLogger(Compressor.class
-			.getName());
+	private static final Logger LOGGER = Logger.getLogger(Compressor.class.getName());
 
-	protected Parameters parameters = null;
-	private float[] data = null;
+	private AtomicInteger samplesCount;
+	private AtomicInteger partsCount;
+
+	protected Parameters parameters;
+	protected float[] data = null;
 	protected final int[] parts;
 	protected int nParts;
 	protected int nSamples;
@@ -36,38 +35,6 @@ public class Compressor {
 	protected long completeTime;
 	protected boolean isDone = false;
 
-	private static int samplesCompressSpeed; // samples per sec
-	private static int partsCompressSpeed; // parts per sec
-
-	private TimerTask estimateSpeed = new TimerTask() {
-
-		@Override
-		public void run() {
-
-			int processingSamples = ProcessDispatcher.getProcessedSamples()
-					.get() + countProcessedSamples();
-			samplesCompressSpeed = (processingSamples - ProcessDispatcher
-					.getPassedNSamples().get()) / (Executer.DELTA_TIME / 1000);
-			ProcessDispatcher.getPassedNSamples().set(processingSamples);
-
-			int processingParts = ProcessDispatcher.getProcessedParts().get()
-					+ countProcessedParts();
-			partsCompressSpeed = (processingParts - ProcessDispatcher
-					.getPassedNParts().get()) / (Executer.DELTA_TIME / 1000);
-			ProcessDispatcher.getPassedNParts().set(processingParts);
-		}
-	};
-	private TimerTask printState = new TimerTask() {
-
-		@Override
-		public void run() {
-			LOGGER.log(Level.INFO, "Running " + " progress "
-					+ countProcessedSamples() + "/" + getNSamples() + " part "
-					+ countProcessedParts() + "/" + getNParts());
-			LOGGER.log(Level.INFO, " Speed " + samplesCompressSpeed
-					+ " samples/sec " + partsCompressSpeed + " parts/sec");
-		}
-	};
 
 	public Compressor(float[] inputAudioData, Parameters compressParameters) {
 		parameters = compressParameters;
@@ -92,8 +59,7 @@ public class Compressor {
 			return true;
 		}
 		// check if chunk size under min block size
-		if (to - from + 1 < parameters.getMinBlockSize()
-				* parameters.getDomainScale()) {
+		if (to - from + 1 < parameters.getMinBlockSize() * parameters.getDomainScale()) {
 			return false;
 		}
 		// find mean
@@ -105,8 +71,7 @@ public class Compressor {
 		// find variance
 		sumOfChunk = 0.0f;
 		for (int i = from; i < to; i++) {
-			sumOfChunk = sumOfChunk
-					+ (float) Math.pow((data[i] / 32768.0f) - mu, 2);
+			sumOfChunk = sumOfChunk + (float) Math.pow((data[i] / 32768.0f) - mu, 2);
 		}
 		float var = sumOfChunk / (to - from);
 
@@ -136,7 +101,7 @@ public class Compressor {
 					// check if need to partition
 					if (needToSegment(from, to)) {
 						canPartition = true;
-						
+
 						// partition a range
 						rangeSize = partition(rangeSize, idx, from, to);
 					}
@@ -154,8 +119,7 @@ public class Compressor {
 			rangeSize[i] = 0;
 		}
 		// set new information
-		int midPosition = from
-				+ (int) Math.floor((to - from) / 2) + 1;
+		int midPosition = from + (int) Math.floor((to - from) / 2) + 1;
 		if (midPosition < nSamples) {
 			rangeSize[idx] = midPosition - from;
 		}
@@ -164,7 +128,7 @@ public class Compressor {
 		}
 		return rangeSize;
 	}
-	
+
 	private int[] prepartition(int[] rangeSize) {
 		rangeSize[0] = nSamples; // init size
 		// init size
@@ -214,11 +178,7 @@ public class Compressor {
 		final int nCoeff = parameters.getNCoeff();
 		double[][] code = new double[nParts][nCoeff + 3];
 
-		Timer speedEstimator = new Timer();
-		Timer printTimer = null;
-
-		ExecutorService executorService = Executors
-				.newWorkStealingPool(parameters.getMaxParallelProcess());
+		ExecutorService executorService = Executors.newWorkStealingPool(parameters.getMaxParallelProcess());
 		List<Callable<float[]>> rangeTask = new ArrayList<Callable<float[]>>();
 
 		// each range block
@@ -234,10 +194,11 @@ public class Compressor {
 			// parallel range mapping : queuing phase
 			rangeTask.add(new Callable<float[]>() {
 				public float[] call() {
-					float[] codeChunk = getContractCoeff(rangeIdx, nCoeff,
-							rangeBlockSize, bColStart, bColEnd);
+					float[] codeChunk = getContractCoeff(rangeIdx, nCoeff, rangeBlockSize, bColStart, bColEnd);
 					partProgress.addAndGet(1);
 					samplesProgress.addAndGet(rangeBlockSize);
+					partsCount.addAndGet(1);
+					samplesCount.addAndGet(rangeBlockSize);
 					return codeChunk; // code of each range block
 				}
 			});
@@ -245,25 +206,12 @@ public class Compressor {
 		try {
 			initTime = System.currentTimeMillis();
 
-			// start speed estimation
-			speedEstimator.scheduleAtFixedRate(estimateSpeed, 0,
-					Executer.DELTA_TIME);
-
-			// progress report
-			if (parameters.getProgressReportRate() > 0) {
-				printTimer = new Timer();
-				printTimer.scheduleAtFixedRate(printState, 0,
-						parameters.getProgressReportRate());
-			}
-
-			List<Future<float[]>> futures = executorService
-					.invokeAll(rangeTask);
+			List<Future<float[]>> futures = executorService.invokeAll(rangeTask);
 			completeTime = System.currentTimeMillis();
 			for (int c = 0; c < futures.size(); c++) {
 				Future<float[]> future = futures.get(c);
 				// store minimum code value of self similarity
-				code[c] = Arrays.asList(ArrayUtils.toObject(future.get()))
-						.stream().mapToDouble(i -> i).toArray();
+				code[c] = Arrays.asList(ArrayUtils.toObject(future.get())).stream().mapToDouble(i -> i).toArray();
 			}
 		} catch (InterruptedException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
@@ -275,14 +223,6 @@ public class Compressor {
 			executorService.shutdown();
 		}
 		isDone = true;
-
-		ProcessDispatcher.getProcessedSamples().addAndGet(
-				countProcessedSamples());
-		ProcessDispatcher.getProcessedParts().addAndGet(countProcessedParts());
-		speedEstimator.cancel();
-		if (printTimer != null) {
-			printTimer.cancel();
-		}
 		return code; // code of each file
 	}
 
@@ -317,14 +257,6 @@ public class Compressor {
 		return result;
 	}
 
-	public int countProcessedSamples() {
-		return samplesProgress.get();
-	}
-
-	public int countProcessedParts() {
-		return (int) partProgress.get();
-	}
-
 	public int getNParts() {
 		return nParts;
 	}
@@ -341,8 +273,7 @@ public class Compressor {
 		return isDone;
 	}
 
-	private float[] limitCoeff(final int nCoeff, float[] b, float[] a,
-			double[] tempCoeff) {
+	private float[] limitCoeff(final int nCoeff, float[] b, float[] a, double[] tempCoeff) {
 		float[] coeff = new float[nCoeff];
 		for (int i = 0; i < tempCoeff.length; i++) {
 			coeff[i] = (float) tempCoeff[i];
@@ -350,25 +281,22 @@ public class Compressor {
 
 		// limit coefficient
 		float maxCoeff = parameters.getCoeffLimit();
-		if ((tempCoeff[1] > maxCoeff || tempCoeff[1] < -maxCoeff)
-				&& nCoeff == 2) {
+		if ((tempCoeff[1] > maxCoeff || tempCoeff[1] < -maxCoeff) && nCoeff == 2) {
 			if (tempCoeff[1] > maxCoeff) {
 				coeff[1] = maxCoeff;
 			} else if (tempCoeff[1] < -maxCoeff) {
 				coeff[1] = -maxCoeff;
 			}
-			double suma = Arrays.asList(ArrayUtils.toObject(a)).stream()
-					.mapToDouble(i -> i).sum();
-			double sumb = Arrays.asList(ArrayUtils.toObject(b)).stream()
-					.mapToDouble(i -> i).sum();
+			double suma = Arrays.asList(ArrayUtils.toObject(a)).stream().mapToDouble(i -> i).sum();
+			double sumb = Arrays.asList(ArrayUtils.toObject(b)).stream().mapToDouble(i -> i).sum();
 			coeff[0] = (float) ((sumb - coeff[1] * suma) / a.length);
 
 		}
 		return coeff;
 	}
 
-	private float[] composeCode(final int nCoeff, final float rangeIdx,
-			final int rangeBlockSize, int dbIdx, int rev, float[] coeff) {
+	private float[] composeCode(final int nCoeff, final float rangeIdx, final int rangeBlockSize, int dbIdx, int rev,
+			float[] coeff) {
 		float[] codeChunk = new float[nCoeff + 3];
 		// store minimum value of self similarity
 		for (int i = 0; i < nCoeff; i++) {
@@ -411,15 +339,14 @@ public class Compressor {
 		return d;
 	}
 
-	private float[] getContractCoeff(final float rangeIdx, final int nCoeff,
-			final int rangeBlockSize, final int bColStart, final int bColEnd) {
+	private float[] getContractCoeff(final float rangeIdx, final int nCoeff, final int rangeBlockSize,
+			final int bColStart, final int bColEnd) {
 		float[] codeChunk = new float[nCoeff + 3];
 		float bestR = Float.POSITIVE_INFINITY;
 		float[] b = Arrays.copyOfRange(data, bColStart, bColEnd + 1);
 
 		// search similarity matched domain form entire data
-		for (int dbIdx = 0; dbIdx < nSamples - rangeBlockSize
-				* parameters.getDomainScale() - 1; dbIdx += parameters
+		for (int dbIdx = 0; dbIdx < nSamples - rangeBlockSize * parameters.getDomainScale() - 1; dbIdx += parameters
 				.getDStep()) {
 			// get domain block
 			float[] d = getDomainBlock(rangeBlockSize, dbIdx);
@@ -436,11 +363,18 @@ public class Compressor {
 					// parameters that
 					// less than stored parameter s
 					bestR = sumSqrError;
-					codeChunk = composeCode(nCoeff, rangeIdx, rangeBlockSize,
-							dbIdx, rev, coeff);
+					codeChunk = composeCode(nCoeff, rangeIdx, rangeBlockSize, dbIdx, rev, coeff);
 				}
 			}
 		}
 		return codeChunk;
+	}
+
+	public void registerSampleCount(AtomicInteger samplesCount) {
+		this.samplesCount = samplesCount;
+	}
+
+	public void registerPartCount(AtomicInteger partsCount) {
+		this.partsCount = partsCount;
 	}
 }
