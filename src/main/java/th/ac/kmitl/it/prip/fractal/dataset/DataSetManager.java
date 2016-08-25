@@ -364,6 +364,10 @@ public class DataSetManager implements DataSetAPIv1 {
 
 		// write arrays to file
 		try {
+			File outputDir = Paths.get(fileName).getParent().toFile();
+			if (!outputDir.exists()) {
+				outputDir.mkdirs();
+			}
 			new MatFileWriter(fileName, list);
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
@@ -420,13 +424,15 @@ public class DataSetManager implements DataSetAPIv1 {
 	}
 
 	@Override
-	public boolean updateTimingLog(int index, int time) throws IOException {
+	public boolean updateTimingLog(int index, long time) throws IOException {
+		timing.set(index, new String(Long.toString(time)));
 		Files.write(Paths.get(parameters.getOutdir(), "\\timelog.txt"), timing);
 		return true;
 	}
 
 	@Override
 	public boolean updateCompletedLog(int index, String logString) throws IOException {
+		completed.set(index, new String(logString));
 		Files.write(Paths.get(parameters.getOutdir(), "\\completedlog.txt"), completed);
 		return true;
 	}
@@ -485,10 +491,28 @@ public class DataSetManager implements DataSetAPIv1 {
 	public int estimateNumSamples() throws IOException {
 		int numSample = 0;
 		for (int i = 0; i < nameList.length; i++) {
-			FileInputStream fis = new FileInputStream(nameList[0]);
+			Path outputPath = Paths.get(parameters.getInPathPrefix(), nameList[i] + "." + parameters.getInExtension());
+			FileInputStream fis = new FileInputStream(outputPath.toString());
 			numSample = numSample + fis.available() / SAMPLE_BYTE_SIZE;
 			fis.close();
 		}
 		return numSample;
+	}
+
+	@Override
+	public int getSize() {
+		return nameList.length;
+	}
+
+	@Override
+	public boolean existOutput(int index) {
+		Path outputPath = Paths.get(parameters.getOutdir(), nameList[index] + "." + parameters.getOutExtension());
+		File file = new File(outputPath.toString());
+		return file.exists();
+	}
+
+	@Override
+	public String getName(int index) {
+		return new String(nameList[index]);
 	}
 }
