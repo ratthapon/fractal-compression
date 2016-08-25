@@ -1,6 +1,9 @@
 package th.ac.kmitl.it.prip.fractal.compression.audio;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
@@ -18,7 +21,6 @@ import java.util.logging.Logger;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
-import th.ac.kmitl.it.prip.fractal.Executer;
 import th.ac.kmitl.it.prip.fractal.Parameters;
 import th.ac.kmitl.it.prip.fractal.compression.audio.gpu.CUCompressor;
 import th.ac.kmitl.it.prip.fractal.dataset.DataSetManager;
@@ -26,6 +28,7 @@ import th.ac.kmitl.it.prip.fractal.dataset.DataSetManager;
 public class ProcessDispatcher {
 	private static final Logger LOGGER = Logger.getLogger(ProcessDispatcher.class.getName());
 	public static final String[] UNITS = { "", "k", "M", "G", "T", "P" };
+	private static int DELTA_TIME = 5000;
 
 	private AtomicInteger processedSamples = new AtomicInteger(0);
 	private AtomicInteger processedParts = new AtomicInteger(0);
@@ -44,10 +47,10 @@ public class ProcessDispatcher {
 		@Override
 		public void run() {
 
-			samplesCompressSpeed = (samplesCounter.get() - passedNSamples.get()) / (Executer.DELTA_TIME / 1000);
+			samplesCompressSpeed = (samplesCounter.get() - passedNSamples.get()) / (DELTA_TIME / 1000);
 			passedNSamples.set(samplesCounter.get());
 
-			partsCompressSpeed = (partsCounter.get() - passedNParts.get()) / (Executer.DELTA_TIME / 1000);
+			partsCompressSpeed = (partsCounter.get() - passedNParts.get()) / (DELTA_TIME / 1000);
 			passedNParts.set(partsCounter.get());
 		}
 	};
@@ -122,7 +125,7 @@ public class ProcessDispatcher {
 		// save process description
 		try {
 			info.add("Java " + System.getProperty("java.version"));
-			info.add("Version " + Executors.class.getPackage().getImplementationVersion());
+			info.add("Version " + ProcessDispatcher.class.getPackage().getImplementationVersion());
 			info.add("Date " + LocalDateTime.now());
 			info.add(parameters.toString());
 
@@ -133,6 +136,29 @@ public class ProcessDispatcher {
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
 			throw e;
+		}
+
+		// if help
+		if (parameters.isHelp()) {
+			try {
+				InputStream in = ProcessDispatcher.class.getResourceAsStream("help.txt");
+				BufferedReader br = new BufferedReader(new InputStreamReader(in));
+				String help = br.readLine();
+				while (help.length() > 0) {
+					LOGGER.log(Level.INFO, help);
+					help = br.readLine();
+				}
+				in.close();
+				br.close();
+			} catch (IOException e) {
+				LOGGER.log(Level.SEVERE, e.getMessage());
+				throw e;
+			}
+		}
+
+		// validate parameters
+		if (!parameters.isValidParams()) {
+			LOGGER.log(Level.INFO, "Incorrect parameters");
 		}
 	}
 
@@ -154,12 +180,13 @@ public class ProcessDispatcher {
 				estimate();
 
 				// start speed estimation
-				speedEstimator.scheduleAtFixedRate(estimateSpeed, 0, Executer.DELTA_TIME);
+				speedEstimator.scheduleAtFixedRate(estimateSpeed, 0, DELTA_TIME);
 
 				// progress report
 				if (parameters.getProgressReportRate() > 0) {
 					printTimer = new Timer();
-					printTimer.scheduleAtFixedRate(printState, 0, parameters.getProgressReportRate());
+					DELTA_TIME = (int) parameters.getProgressReportRate();
+					printTimer.scheduleAtFixedRate(printState, 0, DELTA_TIME);
 				}
 
 				dispatch();
