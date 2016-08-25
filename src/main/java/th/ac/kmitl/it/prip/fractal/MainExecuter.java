@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import th.ac.kmitl.it.prip.fractal.compression.audio.ProcessDispatcher;
-import th.ac.kmitl.it.prip.fractal.decompression.audio.DecompressorExecuter;
 
 public class MainExecuter {
 	private static final Logger LOGGER = Logger.getLogger(MainExecuter.class.getName());
@@ -35,20 +34,6 @@ public class MainExecuter {
 		return parametersList;
 	}
 
-	public static void exec(Parameters parameters)
-			throws IOException, UnsupportedAudioFileException, InterruptedException {
-		switch (parameters.getProcessName()) {
-		case DECOMPRESS:
-			DecompressorExecuter.exec();
-			break;
-		case COMPRESS:
-		default:
-			ProcessDispatcher dispatcher = new ProcessDispatcher(parameters);
-			dispatcher.exec();
-			break;
-		}
-	}
-
 	public static void main(String[] args) throws IOException, UnsupportedAudioFileException, InterruptedException {
 		try {
 			if (args.length > 0) {
@@ -58,7 +43,8 @@ public class MainExecuter {
 			String[] paramBuffer = new String[argParams.size()];
 			argParams.toArray(paramBuffer);
 			Parameters parameters = new Parameters(paramBuffer);
-			exec(parameters);
+			ProcessDispatcher dispatcher = new ProcessDispatcher(parameters);
+			dispatcher.exec();
 		} catch (IOException e) {
 			LOGGER.info(e.getMessage());
 			throw e;

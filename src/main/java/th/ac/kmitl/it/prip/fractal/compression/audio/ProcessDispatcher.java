@@ -24,6 +24,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import th.ac.kmitl.it.prip.fractal.Parameters;
 import th.ac.kmitl.it.prip.fractal.compression.audio.gpu.CUCompressor;
 import th.ac.kmitl.it.prip.fractal.dataset.DataSetManager;
+import th.ac.kmitl.it.prip.fractal.decompression.audio.Decompressor;
 
 public class ProcessDispatcher {
 	private static final Logger LOGGER = Logger.getLogger(ProcessDispatcher.class.getName());
@@ -63,7 +64,7 @@ public class ProcessDispatcher {
 		}
 	};
 
-	private void dispatch() throws IOException, InterruptedException {
+	private void dispatchEncoders() throws IOException, InterruptedException {
 		// single process executor
 		ExecutorService executorService = Executors.newFixedThreadPool(1);
 		List<Callable<double[][]>> compressorQueue = new ArrayList<Callable<double[][]>>();
@@ -115,7 +116,26 @@ public class ProcessDispatcher {
 		}
 	}
 
-	private void prepare() throws IOException {
+	private void dispatchDecoders() throws IOException {
+		// single process executor
+
+		for (int idsIdx = 0; idsIdx < dataSetManager.getSize(); idsIdx++) {
+			Decompressor decompressor;
+			double[][] codes = dataSetManager.readCode(idsIdx);
+			decompressor = new Decompressor(codes, parameters);
+			double[] audioData = decompressor.decompress();
+
+			// logging
+			String log = "Decompressed " + idsIdx + " " + dataSetManager.getName(idsIdx) + " time "
+					+ decompressor.time() / 1000 + " sec";
+			LOGGER.log(Level.INFO, log);
+
+			// store minimum value of self similarity
+			dataSetManager.writeAudio(idsIdx, audioData);
+		}
+	}
+
+	protected void prepare() throws IOException {
 		// generate output directory
 		Paths.get(parameters.getOutdir()).toFile().mkdirs();
 
@@ -162,7 +182,7 @@ public class ProcessDispatcher {
 		}
 	}
 
-	private void estimate() throws IOException, UnsupportedAudioFileException {
+	protected void estimate() throws IOException, UnsupportedAudioFileException {
 		int nSamples = dataSetManager.estimateNumSamples();
 		int samplesUnit = (int) (Math.log10(nSamples) / 3);
 		LOGGER.log(Level.INFO, String.format("Expect %d %s samples", (int) (nSamples / Math.pow(10, samplesUnit * 3)),
@@ -188,8 +208,21 @@ public class ProcessDispatcher {
 					DELTA_TIME = (int) parameters.getProgressReportRate();
 					printTimer.scheduleAtFixedRate(printState, 0, DELTA_TIME);
 				}
+				switch (parameters.getProcessName()) {
+				case DISTRIBUTED_COMPRESS:
 
-				dispatch();
+					break;
+				case DISTRIBUTED_DECOMPRESS:
+
+					break;
+				case DECOMPRESS:
+					dispatchDecoders();
+					break;
+				case COMPRESS:
+				default:
+					dispatchEncoders();
+					break;
+				}
 			}
 		} catch (IOException | UnsupportedAudioFileException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
