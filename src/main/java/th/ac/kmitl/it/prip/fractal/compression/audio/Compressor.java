@@ -44,17 +44,17 @@ public class Compressor {
 		@Override
 		public void run() {
 
-			int processingSamples = CompressorExecuter.getProcessedSamples()
+			int processingSamples = ProcessDispatcher.getProcessedSamples()
 					.get() + countProcessedSamples();
-			samplesCompressSpeed = (processingSamples - CompressorExecuter
+			samplesCompressSpeed = (processingSamples - ProcessDispatcher
 					.getPassedNSamples().get()) / (Executer.DELTA_TIME / 1000);
-			CompressorExecuter.getPassedNSamples().set(processingSamples);
+			ProcessDispatcher.getPassedNSamples().set(processingSamples);
 
-			int processingParts = CompressorExecuter.getProcessedParts().get()
+			int processingParts = ProcessDispatcher.getProcessedParts().get()
 					+ countProcessedParts();
-			partsCompressSpeed = (processingParts - CompressorExecuter
+			partsCompressSpeed = (processingParts - ProcessDispatcher
 					.getPassedNParts().get()) / (Executer.DELTA_TIME / 1000);
-			CompressorExecuter.getPassedNParts().set(processingParts);
+			ProcessDispatcher.getPassedNParts().set(processingParts);
 		}
 	};
 	private TimerTask printState = new TimerTask() {
@@ -276,9 +276,9 @@ public class Compressor {
 		}
 		isDone = true;
 
-		CompressorExecuter.getProcessedSamples().addAndGet(
+		ProcessDispatcher.getProcessedSamples().addAndGet(
 				countProcessedSamples());
-		CompressorExecuter.getProcessedParts().addAndGet(countProcessedParts());
+		ProcessDispatcher.getProcessedParts().addAndGet(countProcessedParts());
 		speedEstimator.cancel();
 		if (printTimer != null) {
 			printTimer.cancel();

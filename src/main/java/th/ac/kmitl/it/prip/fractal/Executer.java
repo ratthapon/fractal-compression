@@ -14,24 +14,13 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
-
-import th.ac.kmitl.it.prip.fractal.Parameters;
-import th.ac.kmitl.it.prip.fractal.Parameters.ProcessName;
-import th.ac.kmitl.it.prip.fractal.compression.audio.Compressor;
-import th.ac.kmitl.it.prip.fractal.dataset.DataSetManager;
-import th.ac.kmitl.it.prip.fractal.decompression.audio.Decompressor;
-
 public abstract class Executer {
-	private static final Logger LOGGER = Logger.getLogger(Executer.class
-			.getName());
+	private static final Logger LOGGER = Logger.getLogger(Executer.class.getName());
 
-	protected static final String[] UNITS = { "", "k", "M", "G", "T", "P" };
+	
 	public static final int DELTA_TIME = 5000;
 	protected static Parameters parameters;
 	protected static String[] inputParams;
-	protected static int nSamples = 0;
-	protected static int nParts = 0;
 
 	protected static void processParameters(String[] lines) throws IOException {
 		inputParams = lines;
@@ -51,10 +40,8 @@ public abstract class Executer {
 		parameters = new Parameters(inputParams);
 		if (parameters.isHelp()) {
 			try {
-				InputStream in = MainExecuter.class
-						.getResourceAsStream("help.txt");
-				BufferedReader br = new BufferedReader(
-						new InputStreamReader(in));
+				InputStream in = MainExecuter.class.getResourceAsStream("help.txt");
+				BufferedReader br = new BufferedReader(new InputStreamReader(in));
 				String help = br.readLine();
 				while (help.length() > 0) {
 					LOGGER.log(Level.INFO, help);
@@ -89,67 +76,18 @@ public abstract class Executer {
 		// save process description
 		try {
 			info.add("Java " + System.getProperty("java.version"));
-			info.add("Version "
-					+ Executors.class.getPackage().getImplementationVersion());
+			info.add("Version " + Executors.class.getPackage().getImplementationVersion());
 			info.add("Date " + LocalDateTime.now());
 			info.add(parameters.toString());
 
 			Files.write(Paths.get(parameters.getOutdir(), "\\info.txt"), info);
-			Files.write(Paths.get(parameters.getOutdir(), "\\parameters.txt"),
-					Arrays.asList(inputParams));
+			Files.write(Paths.get(parameters.getOutdir(), "\\parameters.txt"), Arrays.asList(inputParams));
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage());
 			throw e;
 		}
 
 		// generate output
-	}
-
-	protected static void estimate(ProcessName processName) throws IOException,
-			UnsupportedAudioFileException {
-		// estimate runtime
-		String[] idsList = null;
-		try {
-			idsList = DataSetManager.getIdsPathList(parameters);
-		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE,
-					"Can not open files list : " + parameters.getInfile());
-			throw e;
-		}
-		for (int i = 0; i < idsList.length; i++) {
-			try {
-				if (processName.equals(ProcessName.COMPRESS)) {
-					float[] inputAudioData = DataSetManager.audioread(idsList[i],
-							parameters.getInExtension());
-					Compressor compressor = new Compressor(inputAudioData,
-							parameters);
-					nSamples += compressor.getNSamples();
-					nParts += compressor.getNParts();
-				} else if (processName.equals(ProcessName.DECOMPRESS)) {
-					double[][] codes = DataSetManager.codesread(idsList[i],
-							parameters.getInExtension());
-					Decompressor decompressor = new Decompressor(codes,
-							parameters);
-					nSamples += decompressor.getNSamples();
-					nParts += decompressor.getNParts();
-				}
-
-			} catch (UnsupportedAudioFileException e) {
-				LOGGER.log(Level.SEVERE, "Unsupport audio file extension : "
-						+ parameters.getInExtension());
-				throw e;
-			} catch (IOException e) {
-				LOGGER.log(Level.SEVERE, "File read error : " + idsList[i]);
-				throw e;
-			}
-		}
-		int samplesUnit = (int) (Math.log10(nSamples) / 3);
-		int partsUnit = (int) (Math.log10(nParts) / 3);
-		LOGGER.log(Level.INFO, String.format(
-				"Expect %d %s samples %d %s parts",
-				(int) (nSamples / Math.pow(10, samplesUnit * 3)),
-				UNITS[samplesUnit],
-				(int) (nParts / Math.pow(10, partsUnit * 3)), UNITS[partsUnit]));
 	}
 
 	protected Executer() {

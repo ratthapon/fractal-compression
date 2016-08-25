@@ -10,12 +10,11 @@ import java.util.logging.Logger;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
-import th.ac.kmitl.it.prip.fractal.compression.audio.CompressorExecuter;
+import th.ac.kmitl.it.prip.fractal.compression.audio.ProcessDispatcher;
 import th.ac.kmitl.it.prip.fractal.decompression.audio.DecompressorExecuter;
 
 public class MainExecuter {
-	private static final Logger LOGGER = Logger.getLogger(MainExecuter.class
-			.getName());
+	private static final Logger LOGGER = Logger.getLogger(MainExecuter.class.getName());
 
 	private MainExecuter() {
 	}
@@ -23,8 +22,7 @@ public class MainExecuter {
 	protected static List<String> readInput() throws IOException {
 		List<String> parametersList = new ArrayList<>();
 		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(
-					System.in));
+			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 			String parameter = br.readLine();
 			while (parameter.length() > 0) {
 				parametersList.add(parameter);
@@ -37,21 +35,20 @@ public class MainExecuter {
 		return parametersList;
 	}
 
-	public static void exec() throws IOException,
-			UnsupportedAudioFileException, InterruptedException {
+	public static void exec() throws IOException, UnsupportedAudioFileException, InterruptedException {
 		switch (Executer.parameters.getProcessName()) {
 		case DECOMPRESS:
 			DecompressorExecuter.exec();
 			break;
 		case COMPRESS:
 		default:
-			CompressorExecuter.exec();
+			ProcessDispatcher dispatcher = new ProcessDispatcher(Executer.parameters);
+			dispatcher.exec();
 			break;
 		}
 	}
 
-	public static void main(String[] args) throws IOException,
-			UnsupportedAudioFileException, InterruptedException {
+	public static void main(String[] args) throws IOException, UnsupportedAudioFileException, InterruptedException {
 		try {
 			if (args.length > 0) {
 				System.setIn(new FileInputStream(args[0]));
