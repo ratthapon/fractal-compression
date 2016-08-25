@@ -51,12 +51,15 @@ public class Parameters {
 	private int maxIteration = 15;
 	private int samplingRate = 0;
 
+	private String[] inArgs;
+
 	private Parameters() {
 	}
 
 	public Parameters(String[] args) throws IOException {
 		new Parameters();
 		this.generateFrom(args);
+		inArgs = args;
 	}
 
 	private void setDefault() throws IOException {
@@ -308,37 +311,67 @@ public class Parameters {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("Parameters \n[  testName = ");
+		builder.append("Parameters [processName=");
+		builder.append(processName);
+		builder.append(", testName=");
 		builder.append(testName);
-		builder.append("\n  infile = ");
+		builder.append(", infile=");
 		builder.append(infile);
-		builder.append("\n  outdir = ");
+		builder.append(", inPathPrefix=");
+		builder.append(inPathPrefix);
+		builder.append(", fromIdx=");
+		builder.append(fromIdx);
+		builder.append(", toIdx=");
+		builder.append(toIdx);
+		builder.append(", outdir=");
 		builder.append(outdir);
-		builder.append("\n  audioExtension = ");
+		builder.append(", inExtension=");
 		builder.append(inExtension);
-		builder.append("\n  codeExtension = ");
+		builder.append(", outExtension=");
 		builder.append(outExtension);
-		builder.append("\n  minBlockSize = ");
-		builder.append(minBlockSize);
-		builder.append("\n  maxBlockSize = ");
-		builder.append(maxBlockSize);
-		builder.append("\n  thresh = ");
-		builder.append(thresh);
-		builder.append("\n  domainScale = ");
-		builder.append(domainScale);
-		builder.append("\n  maxParallelProcess = ");
+		builder.append(", maxParallelProcess=");
 		builder.append(maxParallelProcess);
-		builder.append("\n  adaptivePartition = ");
-		builder.append(adaptivePartition);
-		builder.append("\n  dStep = ");
-		builder.append(dStep);
-		builder.append("\n  nCoeff = ");
-		builder.append(nCoeff);
-		builder.append("\n  coeffLimit = ");
-		builder.append(coeffLimit);
-		builder.append("\n  validParams = ");
+		builder.append(", progressReportRate=");
+		builder.append(progressReportRate);
+		builder.append(", skipIfExist=");
+		builder.append(skipIfExist);
+		builder.append(", isHelp=");
+		builder.append(isHelp);
+		builder.append(", validParams=");
 		builder.append(validParams);
-		builder.append("  ]\n");
+		builder.append(", overlap=");
+		builder.append(overlap);
+		builder.append(", adaptivePartition=");
+		builder.append(adaptivePartition);
+		builder.append(", dStep=");
+		builder.append(dStep);
+		builder.append(", nCoeff=");
+		builder.append(nCoeff);
+		builder.append(", coeffLimit=");
+		builder.append(coeffLimit);
+		builder.append(", minBlockSize=");
+		builder.append(minBlockSize);
+		builder.append(", maxBlockSize=");
+		builder.append(maxBlockSize);
+		builder.append(", thresh=");
+		builder.append(thresh);
+		builder.append(", domainScale=");
+		builder.append(domainScale);
+		builder.append(", frameLength=");
+		builder.append(frameLength);
+		builder.append(", usingCV=");
+		builder.append(usingCV);
+		builder.append(", gpuEnable=");
+		builder.append(gpuEnable);
+		builder.append(", regularize=");
+		builder.append(regularize);
+		builder.append(", alpha=");
+		builder.append(alpha);
+		builder.append(", maxIteration=");
+		builder.append(maxIteration);
+		builder.append(", samplingRate=");
+		builder.append(samplingRate);
+		builder.append("]");
 		return builder.toString();
 	}
 
@@ -404,5 +437,9 @@ public class Parameters {
 
 	public float getRegularize() {
 		return regularize;
+	}
+
+	public String[] getInArgs() {
+		return inArgs;
 	}
 }
