@@ -18,7 +18,7 @@ import org.apache.commons.math3.fitting.WeightedObservedPoints;
 
 import th.ac.kmitl.it.prip.fractal.Parameters;
 
-public class Compressor {
+public class Compressor implements ProcessorAPIv1 {
 	private static final Logger LOGGER = Logger.getLogger(Compressor.class.getName());
 
 	private AtomicInteger samplesCount;
@@ -34,7 +34,6 @@ public class Compressor {
 	protected long initTime;
 	protected long completeTime;
 	protected boolean isDone = false;
-
 
 	public Compressor(float[] inputAudioData, Parameters compressParameters) {
 		parameters = compressParameters;
@@ -174,7 +173,8 @@ public class Compressor {
 		return result;
 	}
 
-	public double[][] compress() throws InterruptedException, ExecutionException {
+	@Override
+	public double[][] process() throws InterruptedException, ExecutionException {
 		final int nCoeff = parameters.getNCoeff();
 		double[][] code = new double[nParts][nCoeff + 3];
 
@@ -370,10 +370,12 @@ public class Compressor {
 		return codeChunk;
 	}
 
+	@Override
 	public void registerSampleCount(AtomicInteger samplesCount) {
 		this.samplesCount = samplesCount;
 	}
 
+	@Override
 	public void registerPartCount(AtomicInteger partsCount) {
 		this.partsCount = partsCount;
 	}

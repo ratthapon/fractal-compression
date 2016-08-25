@@ -4,13 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -65,29 +59,6 @@ public abstract class Executer {
 		// remove output directory
 		// remove parameter setting
 		// remove output
-	}
-
-	protected static void prepare() throws IOException {
-		// generate output directory
-		Paths.get(parameters.getOutdir()).toFile().mkdirs();
-
-		// generate parameter setting
-		List<String> info = new ArrayList<String>();
-		// save process description
-		try {
-			info.add("Java " + System.getProperty("java.version"));
-			info.add("Version " + Executors.class.getPackage().getImplementationVersion());
-			info.add("Date " + LocalDateTime.now());
-			info.add(parameters.toString());
-
-			Files.write(Paths.get(parameters.getOutdir(), "\\info.txt"), info);
-			Files.write(Paths.get(parameters.getOutdir(), "\\parameters.txt"), Arrays.asList(inputParams));
-		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE, e.getMessage());
-			throw e;
-		}
-
-		// generate output
 	}
 
 	protected Executer() {

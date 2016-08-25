@@ -35,14 +35,15 @@ public class MainExecuter {
 		return parametersList;
 	}
 
-	public static void exec() throws IOException, UnsupportedAudioFileException, InterruptedException {
-		switch (Executer.parameters.getProcessName()) {
+	public static void exec(Parameters parameters)
+			throws IOException, UnsupportedAudioFileException, InterruptedException {
+		switch (parameters.getProcessName()) {
 		case DECOMPRESS:
 			DecompressorExecuter.exec();
 			break;
 		case COMPRESS:
 		default:
-			ProcessDispatcher dispatcher = new ProcessDispatcher(Executer.parameters);
+			ProcessDispatcher dispatcher = new ProcessDispatcher(parameters);
 			dispatcher.exec();
 			break;
 		}
@@ -53,8 +54,11 @@ public class MainExecuter {
 			if (args.length > 0) {
 				System.setIn(new FileInputStream(args[0]));
 			}
-			Executer.processParameters(readInput());
-			exec();
+			List<String> argParams = readInput();
+			String[] paramBuffer = new String[argParams.size()];
+			argParams.toArray(paramBuffer);
+			Parameters parameters = new Parameters(paramBuffer);
+			exec(parameters);
 		} catch (IOException e) {
 			LOGGER.info(e.getMessage());
 			throw e;

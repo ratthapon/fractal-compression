@@ -45,7 +45,8 @@ public class CUCompressor extends Compressor {
         }
     }
 
-    public double[][] compress() {
+    @Override
+    public double[][] process() {
         cudaDeviceReset();
 
         JCuda.setExceptionsEnabled(true);

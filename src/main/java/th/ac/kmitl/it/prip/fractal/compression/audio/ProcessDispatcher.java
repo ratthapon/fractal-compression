@@ -1,7 +1,11 @@
 package th.ac.kmitl.it.prip.fractal.compression.audio;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -19,7 +23,7 @@ import th.ac.kmitl.it.prip.fractal.Parameters;
 import th.ac.kmitl.it.prip.fractal.compression.audio.gpu.CUCompressor;
 import th.ac.kmitl.it.prip.fractal.dataset.DataSetManager;
 
-public class ProcessDispatcher extends Executer {
+public class ProcessDispatcher {
 	private static final Logger LOGGER = Logger.getLogger(ProcessDispatcher.class.getName());
 	public static final String[] UNITS = { "", "k", "M", "G", "T", "P" };
 
@@ -30,6 +34,7 @@ public class ProcessDispatcher extends Executer {
 	private AtomicInteger samplesCounter = new AtomicInteger(0);
 	private AtomicInteger partsCounter = new AtomicInteger(0);
 	private DataSetManager dataSetManager;
+	private Parameters parameters;
 
 	private static int samplesCompressSpeed; // samples per sec
 	private static int partsCompressSpeed; // parts per sec
@@ -77,7 +82,7 @@ public class ProcessDispatcher extends Executer {
 							CUCompressor compressor = new CUCompressor(inputAudioData, parameters);
 							compressor.registerPartCount(partsCounter);
 							compressor.registerSampleCount(samplesCounter);
-							codes = compressor.compress();
+							codes = compressor.process();
 							// logging
 
 							writeLogs(compressor, idsIdx);
@@ -85,7 +90,7 @@ public class ProcessDispatcher extends Executer {
 							Compressor compressor = new Compressor(inputAudioData, parameters);
 							compressor.registerPartCount(partsCounter);
 							compressor.registerSampleCount(samplesCounter);
-							codes = compressor.compress();
+							codes = compressor.process();
 							// logging
 							writeLogs(compressor, idsIdx);
 						}
@@ -107,6 +112,30 @@ public class ProcessDispatcher extends Executer {
 		}
 	}
 
+	private void prepare() throws IOException {
+		// generate output directory
+		Paths.get(parameters.getOutdir()).toFile().mkdirs();
+
+		// generate parameter setting
+		List<String> info = new ArrayList<String>();
+		List<String> paramsList;
+		// save process description
+		try {
+			info.add("Java " + System.getProperty("java.version"));
+			info.add("Version " + Executors.class.getPackage().getImplementationVersion());
+			info.add("Date " + LocalDateTime.now());
+			info.add(parameters.toString());
+
+			paramsList = new ArrayList<String>(Arrays.asList(parameters.getInArgs()));
+
+			Files.write(Paths.get(parameters.getOutdir(), "\\info.txt"), info);
+			Files.write(Paths.get(parameters.getOutdir(), "\\parameters.txt"), paramsList);
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, e.getMessage());
+			throw e;
+		}
+	}
+
 	private void estimate() throws IOException, UnsupportedAudioFileException {
 		int nSamples = dataSetManager.estimateNumSamples();
 		int samplesUnit = (int) (Math.log10(nSamples) / 3);
@@ -118,7 +147,6 @@ public class ProcessDispatcher extends Executer {
 		Timer speedEstimator = new Timer();
 		Timer printTimer = null;
 		try {
-			processParameters();
 			LOGGER.log(Level.INFO, "Test name " + parameters.getTestName());
 			LOGGER.log(Level.INFO, parameters.toString());
 			if (parameters.isValidParams()) {
@@ -158,6 +186,7 @@ public class ProcessDispatcher extends Executer {
 
 	public ProcessDispatcher(Parameters parameters) throws IOException {
 		this.dataSetManager = new DataSetManager(parameters);
+		this.parameters = parameters;
 	}
 
 	public AtomicInteger getProcessedSamples() {
