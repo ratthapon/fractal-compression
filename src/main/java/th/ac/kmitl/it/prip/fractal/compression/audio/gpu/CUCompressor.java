@@ -60,16 +60,16 @@ public class CUCompressor extends Compressor {
 
         // Load the ptx file.
         CUmodule reverseVecModule = new CUmodule();
-        JCudaDriver.cuModuleLoad(reverseVecModule, "reverseVec.ptx");
+        JCudaDriver.cuModuleLoad(reverseVecModule, "classes/reverseVec.ptx");
 
         CUmodule memSetModule = new CUmodule();
-        JCudaDriver.cuModuleLoad(memSetModule, "memSetKernel.ptx");
+        JCudaDriver.cuModuleLoad(memSetModule, "classes/memSetKernel.ptx");
 
         CUmodule limitCoeffModule = new CUmodule();
-        JCudaDriver.cuModuleLoad(limitCoeffModule, "limitCoeff.ptx");
+        JCudaDriver.cuModuleLoad(limitCoeffModule, "classes/limitCoeff.ptx");
 
         CUmodule sumSquareErrorModule = new CUmodule();
-        JCudaDriver.cuModuleLoad(sumSquareErrorModule, "sumSquareError.ptx");
+        JCudaDriver.cuModuleLoad(sumSquareErrorModule, "classes/sumSquareError.ptx");
 
         // Obtain a function pointer to the kernel function.
         CUfunction reverseVec = new CUfunction();
