@@ -6,7 +6,7 @@
 	<!-- stage . api version . release . fix - may omit this -->
 	<version>0.0.1</version>
 	<properties>
-		<skipTests>true</skipTests>
+		<skipTests>false</skipTests>
 		<jcuda.version>0.7.5</jcuda.version>
 	</properties>
 	<build>
@@ -57,11 +57,13 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.19.1</version>
 				<configuration>
+					<workingDirectory>${project.build.directory}</workingDirectory>
 					<systemProperties>
 						<property>
 							<name>java.library.path</name>
-							<value>${basedir}/lib</value>
+							<value>${project.build.directory}/lib</value>
 						</property>
 					</systemProperties>
 				</configuration>
@@ -114,6 +116,16 @@
 				</configuration>
 			</plugin>
 		</plugins>
+		<resources>
+			<resource>
+				<filtering>true</filtering>
+				<directory>${project.basedir}</directory><!-- from -->
+				<targetPath>${project.build.directory}</targetPath><!-- to -->
+				<includes>
+					<include>cmd-running.bat</include>
+				</includes>
+			</resource>
+		</resources>
 	</build>
 	<repositories>
 		<repository>
