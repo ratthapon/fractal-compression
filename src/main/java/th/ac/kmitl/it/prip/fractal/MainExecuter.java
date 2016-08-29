@@ -23,7 +23,7 @@ public class MainExecuter {
 		try {
 			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 			String parameter = br.readLine();
-			while (parameter.length() > 0) {
+			while (parameter != null && parameter.length() > 0) {
 				parametersList.add(parameter);
 				parameter = br.readLine();
 			}
