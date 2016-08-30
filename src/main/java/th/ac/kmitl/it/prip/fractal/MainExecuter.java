@@ -27,6 +27,7 @@ public class MainExecuter {
 				parametersList.add(parameter);
 				parameter = br.readLine();
 			}
+			br.close();
 		} catch (IOException e) {
 			LOGGER.info(e.getMessage());
 			throw e;

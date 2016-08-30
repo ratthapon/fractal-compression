@@ -116,16 +116,6 @@
 				</configuration>
 			</plugin>
 		</plugins>
-		<resources>
-			<resource>
-				<filtering>true</filtering>
-				<directory>${project.basedir}</directory><!-- from -->
-				<targetPath>${project.build.directory}</targetPath><!-- to -->
-				<includes>
-					<include>cmd-running.bat</include>
-				</includes>
-			</resource>
-		</resources>
 	</build>
 	<repositories>
 		<repository>
