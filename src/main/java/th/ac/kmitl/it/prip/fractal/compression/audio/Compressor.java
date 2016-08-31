@@ -44,6 +44,8 @@ public class Compressor implements ProcessorAPIv1 {
 		nParts = parts.length;
 		samplesProgress = new AtomicInteger(0);
 		partProgress = new AtomicInteger(0);
+		samplesCount = new AtomicInteger(0);
+		partsCount = new AtomicInteger(0);
 	}
 
 	private boolean needToSegment(int from, int to) {

@@ -49,7 +49,6 @@
 						</goals>
 						<configuration>
 							<outputDirectory>${project.build.directory}/lib</outputDirectory>
-							<stripVersion>true</stripVersion>
 						</configuration>
 					</execution>
 				</executions>
@@ -63,11 +62,10 @@
 					<systemProperties>
 						<property>
 							<name>java.library.path</name>
-							<value>${project.build.directory}/lib</value>
+							<value>${project.basedir}}/lib</value>
 						</property>
 					</systemProperties>
-					<forkMode>once</forkMode>
-					<argLine>-Djava.library.path=${project.build.directory}/lib</argLine>
+					<argLine>-Djava.library.path=${project.basedir}/lib</argLine>
 				</configuration>
 			</plugin>
 			<plugin>
