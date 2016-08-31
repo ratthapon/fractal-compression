@@ -66,6 +66,8 @@
 							<value>${project.build.directory}/lib</value>
 						</property>
 					</systemProperties>
+					<forkMode>once</forkMode>
+					<argLine>-Djava.library.path=${project.build.directory}/lib</argLine>
 				</configuration>
 			</plugin>
 			<plugin>

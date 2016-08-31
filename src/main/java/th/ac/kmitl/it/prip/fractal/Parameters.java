@@ -213,7 +213,7 @@ public class Parameters {
 		}
 	}
 
-	protected void setParameter(String argName, String argValue) {
+	public void setParameter(String argName, String argValue) {
 		setProjectParameter(argName, argValue);
 		setEncodeParameter(argName, argValue);
 		setDecodeParameter(argName, argValue);
