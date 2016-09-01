@@ -223,28 +223,15 @@ public class DataSetManager implements DataSetAPIv1 {
 		}
 	}
 
-	private void writeaudio(String fileName, double[] audioData, String audioExtension) throws IOException {
-		try {
-			switch (audioExtension) {
-			case "raw":
-				writeToRaw(fileName + "." + audioExtension, audioData);
-				break;
-
-			default:
-				break;
-			}
-		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE, e.getMessage());
-			throw e;
-		}
-	}
-
 	private void writeaudio(String fileName, double[] audioData, String audioExtension, int sampleRate)
 			throws IOException {
 		try {
 			switch (audioExtension) {
-			case "raw":
+			case "wav":
 				writeToWav(fileName + "." + audioExtension, audioData, sampleRate);
+				break;
+			case "raw":
+				writeToRaw(fileName + "." + audioExtension, audioData);
 				break;
 
 			default:
@@ -406,7 +393,7 @@ public class DataSetManager implements DataSetAPIv1 {
 	@Override
 	public boolean writeAudio(int index, double[] audioData) throws IOException {
 		writeaudio(Paths.get(parameters.getOutdir(), nameList[index]).toString(), audioData,
-				parameters.getOutExtension());
+				parameters.getOutExtension(), parameters.getSamplingRate());
 		return true;
 	}
 

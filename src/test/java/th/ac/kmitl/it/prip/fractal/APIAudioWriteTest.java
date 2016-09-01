@@ -10,7 +10,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -55,7 +54,6 @@ public class APIAudioWriteTest {
 		assertTrue(audioFile.exists());
 	}
 
-	@Ignore("not ready yet")
 	@Test
 	public void testWavAudioWriteAPI() throws IOException {
 		int fs = 16000;
@@ -71,7 +69,7 @@ public class APIAudioWriteTest {
 
 		dataSetManager.writeAudio(input, new double[] { 123 });
 
-		File audioFile = new File(tempFolder.getPath() + "\\" + output + ".raw");
+		File audioFile = new File(tempFolder.getPath() + "\\" + output + ".wav");
 		assertTrue(audioFile.exists());
 	}
 
