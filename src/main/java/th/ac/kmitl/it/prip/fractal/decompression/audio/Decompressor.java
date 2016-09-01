@@ -1,7 +1,6 @@
 package th.ac.kmitl.it.prip.fractal.decompression.audio;
 
 import java.util.Arrays;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -45,9 +44,9 @@ public class Decompressor {
 			for (int fIdx = 0; fIdx < nParts; fIdx++) {
 				int bufferSize = (int) (codes[fIdx][PART_SIZE_ELEMENT] * parameters.getAlpha());
 				double[] domain = new double[bufferSize * parameters.getDomainScale()];
-				int domainIdx = Math.abs((int) (codes[fIdx][DOMAIN_INDEX_ELEMENT] * parameters.getAlpha()));
+				int domainIdx = Math.abs((int) (codes[fIdx][DOMAIN_INDEX_ELEMENT] * parameters.getAlpha())) - 1;
 				domain = resample(Arrays.copyOfRange(audioData, domainIdx, domainIdx + domain.length));
-				if (domainIdx < 0) { // if should be reverse
+				if (codes[fIdx][DOMAIN_INDEX_ELEMENT] < 0) { // if should be reverse
 					ArrayUtils.reverse(domain);
 				}
 
@@ -93,7 +92,9 @@ public class Decompressor {
 			for (int j = 0; j < domainScale; j++) {
 				result[i / domainScale] = result[i / domainScale] + domain[i + j];
 			}
-			result[i / domainScale] = result[i / domainScale] / domainScale;
+		}
+		for (int i = 0; i < result.length; i++) {
+			result[i] = result[i] / domainScale;
 		}
 		return result;
 	}
