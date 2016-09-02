@@ -231,7 +231,7 @@ public class Compressor implements ProcessorAPIv1 {
 	private float computeSumSqrError(float[] b, float[] a, float[] coeff) {
 		float sumSqrError = 0f;
 		for (int j = 0; j < a.length; j++) {
-			sumSqrError += Math.pow(((a[j] * coeff[1]) + coeff[0]) - b[j], 2);
+			sumSqrError += Math.pow(b[j] - ((a[j] * coeff[1]) + coeff[0]), 2);
 		}
 		return sumSqrError;
 	}
@@ -348,20 +348,22 @@ public class Compressor implements ProcessorAPIv1 {
 		float[] b = Arrays.copyOfRange(data, bColStart, bColEnd + 1);
 
 		// search similarity matched domain form entire data
-		for (int dbIdx = 0; dbIdx < nSamples - rangeBlockSize * parameters.getDomainScale() - 1; dbIdx += parameters
-				.getDStep()) {
-			// get domain block
-			float[] d = getDomainBlock(rangeBlockSize, dbIdx);
-			// reduce to half size
-			float[] a = resample(d);
-			for (int rev = 0; rev <= 1; rev++) {
+		for (int rev = 0; rev <= 1; rev++) {
+			for (int dbIdx = 0; dbIdx < nSamples - rangeBlockSize * parameters.getDomainScale() - 1; dbIdx += parameters
+					.getDStep()) {
+				// get domain block
+				float[] d = getDomainBlock(rangeBlockSize, dbIdx);
+				
+				// reduce to half size
+				float[] a = resample(d);
 				a = reverseBlock(a, rev);
+				
 				float[] coeff = extractCoeff(nCoeff, b, a);
 
 				// evaluate sum square error
 				float sumSqrError = computeSumSqrError(b, a, coeff);
 
-				if (bestR > sumSqrError) { // found self
+				if ((bestR - sumSqrError) > 0 ) { // found self
 					// parameters that
 					// less than stored parameter s
 					bestR = sumSqrError;
