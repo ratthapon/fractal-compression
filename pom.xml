@@ -4,7 +4,7 @@
 	<groupId>th.ac.kmitl.it.prip.fractal.compression.audio</groupId>
 	<artifactId>audio-compressor</artifactId>
 	<!-- stage . api version . release . fix - may omit this -->
-	<version>0.0.2</version>
+	<version>0.0.3</version>
 	<properties>
 		<skipTests>false</skipTests>
 		<jcuda.version>0.7.5</jcuda.version>
