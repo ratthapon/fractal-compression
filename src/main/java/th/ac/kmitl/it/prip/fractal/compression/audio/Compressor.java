@@ -26,6 +26,7 @@ public class Compressor implements ProcessorAPIv1 {
 
 	protected Parameters parameters;
 	protected float[] data = null;
+	protected float[] dataRev = null;
 	protected final int[] parts;
 	protected int nParts;
 	protected int nSamples;
@@ -38,6 +39,7 @@ public class Compressor implements ProcessorAPIv1 {
 	public Compressor(float[] inputAudioData, Parameters compressParameters) {
 		parameters = compressParameters;
 		data = inputAudioData;
+		dataRev = reverseBlock(data, 1);
 		nSamples = data.length;
 		parts = this.adaptivePartition();
 		nSamples = Arrays.stream(parts).sum();
@@ -332,13 +334,18 @@ public class Compressor implements ProcessorAPIv1 {
 		return coeff;
 	}
 
-	private float[] getDomainBlock(final int rangeBlockSize, int dbIdx) {
+	private float[] getDomainBlock(final int rangeBlockSize, int dbIdx, int rev) {
 		// locate test domain
 		int dColStart = dbIdx;
 		int dColEnd = dbIdx + rangeBlockSize * parameters.getDomainScale() - 1;
 		// input x
 		float[] d = Arrays.copyOfRange(data, dColStart, dColEnd + 1);
-		return d;
+		if (rev == 1) {
+			d = reverseBlock(d, 1);
+			return d;
+		} else{
+			return d;
+		}
 	}
 
 	private float[] getContractCoeff(final float rangeIdx, final int nCoeff, final int rangeBlockSize,
@@ -352,18 +359,18 @@ public class Compressor implements ProcessorAPIv1 {
 			for (int dbIdx = 0; dbIdx < nSamples - rangeBlockSize * parameters.getDomainScale() - 1; dbIdx += parameters
 					.getDStep()) {
 				// get domain block
-				float[] d = getDomainBlock(rangeBlockSize, dbIdx);
-				
+				float[] d = getDomainBlock(rangeBlockSize, dbIdx, rev);
+
 				// reduce to half size
 				float[] a = resample(d);
-				a = reverseBlock(a, rev);
-				
+				// a = reverseBlock(a, rev);
+
 				float[] coeff = extractCoeff(nCoeff, b, a);
 
 				// evaluate sum square error
 				float sumSqrError = computeSumSqrError(b, a, coeff);
 
-				if ((bestR - sumSqrError) > 0 ) { // found self
+				if (bestR > sumSqrError) { // found self
 					// parameters that
 					// less than stored parameter s
 					bestR = sumSqrError;
