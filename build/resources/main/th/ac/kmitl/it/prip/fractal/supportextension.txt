@@ -1,4 +1,0 @@
-.wav
-.raw
-.mat
-.bin
