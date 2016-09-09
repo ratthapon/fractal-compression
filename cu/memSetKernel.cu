@@ -1,11 +1,11 @@
 extern "C"
 __global__ void memSetKernel(
-int nBatch,int nRangeBlockSize,int nCoeff,int dbStopIdx,int dScale, float regularize,
+int nBatch,int nRangeBlockSize,int nCoeff,int nDScale, int dbStopIdx,int dScale, float regularize,
 
 float *data,float *dataRev, // array of data and reverse data
 float *R, // array of range
 // arrays pointer
-float *DA, float *RA, 
+float *DA, float *RA,
 float *AA, float *BA,
 float *IA, float *CA,
 float *EA, float *SA
@@ -53,21 +53,21 @@ float **EP, float **SP
 			for(int i = 0; i < nRangeBlockSize; i++){
 				*(DA + i + dpOffset + nRangeBlockSize + degreePad) = (*(DA + j + dpOffset + nRangeBlockSize)) * (*(DA + j + dpOffset + nRangeBlockSize + degreePad - nRangeBlockSize)) ; // power n>=2
 			}
-		} 
-		
+		}
+
 		// initialize range and error arrays
 		int rpOffset = (taskIdx * nRangeBlockSize);
 		for(int j = 0; j < nRangeBlockSize; j++){
 			*(RA + rpOffset + j) = *(R + j);
 			*(EA + rpOffset + j) = *(R + j);
 		}
-		
+
 		// initialize covariance matrix with regularization
 		int apOffset = (taskIdx * nCoeff * nCoeff);
 		for(int i = 0; i < nCoeff * nCoeff; i+= nCoeff+1){
 			*(AA + apOffset + i) = regularize * regularize; // power 0
 		}
-		
+
 		// pointing section
 		DP[taskIdx] = (DA + taskIdx * nRangeBlockSize * nCoeff);
 		RP[taskIdx] = (RA + taskIdx * nRangeBlockSize);

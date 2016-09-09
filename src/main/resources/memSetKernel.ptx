@@ -18,8 +18,8 @@
 	.param .u32 memSetKernel_param_2,
 	.param .u32 memSetKernel_param_3,
 	.param .u32 memSetKernel_param_4,
-	.param .f32 memSetKernel_param_5,
-	.param .u64 memSetKernel_param_6,
+	.param .u32 memSetKernel_param_5,
+	.param .f32 memSetKernel_param_6,
 	.param .u64 memSetKernel_param_7,
 	.param .u64 memSetKernel_param_8,
 	.param .u64 memSetKernel_param_9,
@@ -37,7 +37,8 @@
 	.param .u64 memSetKernel_param_21,
 	.param .u64 memSetKernel_param_22,
 	.param .u64 memSetKernel_param_23,
-	.param .u64 memSetKernel_param_24
+	.param .u64 memSetKernel_param_24,
+	.param .u64 memSetKernel_param_25
 )
 {
 	.reg .pred 	%p<25>;
@@ -49,27 +50,27 @@
 	ld.param.u32 	%r29, [memSetKernel_param_0];
 	ld.param.u32 	%r30, [memSetKernel_param_1];
 	ld.param.u32 	%r31, [memSetKernel_param_2];
-	ld.param.u32 	%r32, [memSetKernel_param_4];
-	ld.param.f32 	%f3, [memSetKernel_param_5];
-	ld.param.u64 	%rd38, [memSetKernel_param_6];
-	ld.param.u64 	%rd39, [memSetKernel_param_7];
-	ld.param.u64 	%rd40, [memSetKernel_param_8];
-	ld.param.u64 	%rd41, [memSetKernel_param_9];
-	ld.param.u64 	%rd42, [memSetKernel_param_10];
-	ld.param.u64 	%rd43, [memSetKernel_param_11];
-	ld.param.u64 	%rd44, [memSetKernel_param_12];
-	ld.param.u64 	%rd45, [memSetKernel_param_13];
-	ld.param.u64 	%rd46, [memSetKernel_param_14];
-	ld.param.u64 	%rd47, [memSetKernel_param_15];
-	ld.param.u64 	%rd48, [memSetKernel_param_16];
-	ld.param.u64 	%rd49, [memSetKernel_param_17];
-	ld.param.u64 	%rd50, [memSetKernel_param_18];
-	ld.param.u64 	%rd51, [memSetKernel_param_19];
-	ld.param.u64 	%rd52, [memSetKernel_param_20];
-	ld.param.u64 	%rd53, [memSetKernel_param_21];
-	ld.param.u64 	%rd54, [memSetKernel_param_22];
-	ld.param.u64 	%rd55, [memSetKernel_param_23];
-	ld.param.u64 	%rd56, [memSetKernel_param_24];
+	ld.param.u32 	%r32, [memSetKernel_param_5];
+	ld.param.f32 	%f3, [memSetKernel_param_6];
+	ld.param.u64 	%rd38, [memSetKernel_param_7];
+	ld.param.u64 	%rd39, [memSetKernel_param_8];
+	ld.param.u64 	%rd40, [memSetKernel_param_9];
+	ld.param.u64 	%rd41, [memSetKernel_param_10];
+	ld.param.u64 	%rd42, [memSetKernel_param_11];
+	ld.param.u64 	%rd43, [memSetKernel_param_12];
+	ld.param.u64 	%rd44, [memSetKernel_param_13];
+	ld.param.u64 	%rd45, [memSetKernel_param_14];
+	ld.param.u64 	%rd46, [memSetKernel_param_15];
+	ld.param.u64 	%rd47, [memSetKernel_param_16];
+	ld.param.u64 	%rd48, [memSetKernel_param_17];
+	ld.param.u64 	%rd49, [memSetKernel_param_18];
+	ld.param.u64 	%rd50, [memSetKernel_param_19];
+	ld.param.u64 	%rd51, [memSetKernel_param_20];
+	ld.param.u64 	%rd52, [memSetKernel_param_21];
+	ld.param.u64 	%rd53, [memSetKernel_param_22];
+	ld.param.u64 	%rd54, [memSetKernel_param_23];
+	ld.param.u64 	%rd55, [memSetKernel_param_24];
+	ld.param.u64 	%rd56, [memSetKernel_param_25];
 	mov.u32 	%r33, %ctaid.x;
 	mov.u32 	%r34, %ntid.x;
 	mov.u32 	%r35, %tid.x;
