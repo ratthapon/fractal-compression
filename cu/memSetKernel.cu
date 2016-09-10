@@ -1,6 +1,6 @@
 extern "C"
 __global__ void memSetKernel(
-int nBatch,int nRangeBlockSize,int nCoeff,int nDScale, int dbStopIdx,int dScale, float regularize,
+int nBatch,int rbs,int nCoeff,int nDScale, int dbStopIdx,int dScale, float regularize,
 
 float *data,float *dataRev, // array of data and reverse data
 float *R, // array of range
@@ -22,42 +22,42 @@ float **EP, float **SP
     {
 		int dColStart = taskIdx % (nBatch/2);
 		// initialize domain arrays
-		int dpOffset = (taskIdx * nRangeBlockSize * nCoeff);
-		for(int i = 0; i < nRangeBlockSize; i++){
+		int dpOffset = (taskIdx * rbs * nCoeff);
+		for(int i = 0; i < rbs; i++){
 			DA[dpOffset + i] = 1.0f; // power 0
 		}
-		for(int i = 0; i < nRangeBlockSize; i++){
-			DA[dpOffset + i + nRangeBlockSize] = 0.0f; // power 1
+		for(int i = 0; i < rbs; i++){
+			DA[dpOffset + i + rbs] = 0.0f; // power 1
 		}
 		// vec sumation
 		if(taskIdx < (nBatch/2)){
 			for(int i = 0; i < dScale; i++){
-				for(int j = 0; j < nRangeBlockSize; j++){
-					DA[dpOffset + nRangeBlockSize + j] = DA[dpOffset + nRangeBlockSize + j] + data[dColStart + j*dScale + i];
+				for(int j = 0; j < rbs; j++){
+					DA[dpOffset + rbs + j] = DA[dpOffset + rbs + j] + data[dColStart + j*dScale + i];
 				}
 			}
 		}else{ // gen reverse domain
 			for(int i = 0; i < dScale; i++){
-				for(int j = 0; j < nRangeBlockSize; j++){
-					DA[dpOffset + nRangeBlockSize + j] = DA[dpOffset + nRangeBlockSize + j] + dataRev[dColStart + j*dScale+ i];
+				for(int j = 0; j < rbs; j++){
+					DA[dpOffset + rbs + j] = DA[dpOffset + rbs + j] + dataRev[dColStart + j*dScale+ i];
 				}
 			}
 		}
 		// vec scalig
-		for(int j = 0; j < nRangeBlockSize; j++){
-			DA[dpOffset + nRangeBlockSize + j] = DA[dpOffset + nRangeBlockSize + j]/dScale;
+		for(int j = 0; j < rbs; j++){
+			DA[dpOffset + rbs + j] = DA[dpOffset + rbs + j]/dScale;
 		}
 		// calculate next degree
 		for(int j = 2; j < nCoeff; j++){
-			int degreePad = (j*nRangeBlockSize);
-			for(int i = 0; i < nRangeBlockSize; i++){
-				DA[i + dpOffset + nRangeBlockSize + degreePad] = DA[j + dpOffset + nRangeBlockSize] * DA[j + dpOffset + nRangeBlockSize + degreePad - nRangeBlockSize] ; // power n>=2
+			int degreePad = (j*rbs);
+			for(int i = 0; i < rbs; i++){
+				DA[i + dpOffset + rbs + degreePad] = DA[j + dpOffset + rbs] * DA[j + dpOffset + rbs + degreePad - rbs] ; // power n>=2
 			}
 		}
 
 		// initialize range and error arrays
-		int rpOffset = (taskIdx * nRangeBlockSize);
-		for(int j = 0; j < nRangeBlockSize; j++){
+		int rpOffset = (taskIdx * rbs);
+		for(int j = 0; j < rbs; j++){
 			RA[rpOffset + j] = R[j];
 			EA[rpOffset + j] = R[j];
 		}
@@ -69,13 +69,13 @@ float **EP, float **SP
 		}
 
 		// pointing section
-		DP[taskIdx] = (DA + taskIdx * nRangeBlockSize * nCoeff);
-		RP[taskIdx] = (RA + taskIdx * nRangeBlockSize);
+		DP[taskIdx] = (DA + taskIdx * rbs * nCoeff);
+		RP[taskIdx] = (RA + taskIdx * rbs);
 		AP[taskIdx] = (AA + taskIdx * nCoeff * nCoeff);
 		BP[taskIdx] = (BA + taskIdx * nCoeff);
 		IP[taskIdx] = (IA + taskIdx * nCoeff * nCoeff);
 		CP[taskIdx] = (CA + taskIdx * nCoeff);
-		EP[taskIdx] = (EA + taskIdx * nRangeBlockSize);
+		EP[taskIdx] = (EA + taskIdx * rbs);
 		SP[taskIdx] = (SA + taskIdx);
     }
 }
