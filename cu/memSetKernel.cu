@@ -52,9 +52,9 @@ float **EP, float **SP
 		}
 		
 		// calculate next degree
-		for(int j = 2; j < nCoeff; j++){
-			int degreePad = (j*rbs);
-			for(int i = 0; i < rbs; i++){
+		for(int j = 2; j < nDegree; j++){
+			int degreePad = (j * rbs * nDScale );
+			for(int i = 0; i < rbs * nDScale; i++){
 				DA[i + dpOffset + rbs + degreePad] = DA[j + dpOffset + rbs] * DA[j + dpOffset + rbs + degreePad - rbs] ; // power n>=2
 			}
 		}
