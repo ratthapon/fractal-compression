@@ -150,6 +150,9 @@ public class Parameters {
 		case "skipifexist":
 			skipIfExist = Boolean.parseBoolean(argValue);
 			break;
+		case "ndscale":
+			nDScale = Integer.parseInt(argValue);
+			break;
 		default:
 			break;
 		}
