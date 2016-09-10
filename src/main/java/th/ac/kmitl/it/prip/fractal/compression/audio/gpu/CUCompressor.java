@@ -237,35 +237,53 @@ public class CUCompressor extends Compressor {
 			// GPU batch operation
 			JCuda.cudaStreamSynchronize(stream);
 			batcTimeTick = System.nanoTime();
-			try {
 
-				if (prevRBS != rbs) { // skip redundancy computation
-
+			if (prevRBS != rbs) { // skip redundancy computation
+				try {
 					// compute X'X
 					JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, nCoeff, nCoeff, rbs,
 							Pointer.to(new float[] { 1.0f }), dDAP, rbs, dDAP, rbs, Pointer.to(new float[] { 1.0f }),
 							dAAP, nCoeff, nBatch);
 					JCuda.cudaStreamSynchronize(stream);
+				} catch (Exception e) {
+					LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform covariance matrix (X'X) computation.");
+					throw new IllegalStateException(e);
+				}
 
+				try {
 					// compute pseudo inverse X'X
 					JCublas2.cublasSmatinvBatched(cublasHandle, nCoeff, dAAP, nCoeff, dIAAP, nCoeff, dInfoArray,
 							nBatch);
 					JCuda.cudaStreamSynchronize(stream);
-
+				} catch (Exception e) {
+					LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform inverse(X'X) computation.");
+					throw new IllegalStateException(e);
 				}
 
+			}
+
+			try {
 				// compute X'Y
 				JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, nCoeff, 1, rbs,
 						Pointer.to(new float[] { 1.0f }), dDAP, rbs, dRAP, rbs, Pointer.to(new float[] { 0.0f }), dBAP,
 						nCoeff, nBatch);
 				JCuda.cudaStreamSynchronize(stream);
-
+			} catch (Exception e) {
+				LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform (X'Y) computation.");
+				throw new IllegalStateException(e);
+			}
+			try {
 				// compute pinv(X'X)*(X'Y)
 				JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, nCoeff, 1, nCoeff,
 						Pointer.to(new float[] { 1.0f }), dIAAP, nCoeff, dBAP, nCoeff, Pointer.to(new float[] { 0.0f }),
 						dCAP, nCoeff, nBatch);
 				JCuda.cudaStreamSynchronize(stream);
+			} catch (Exception e) {
+				LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform pinv(X'X)*(X'Y) computation.");
+				throw new IllegalStateException(e);
+			}
 
+			try {
 				// limit coeff
 				// Call the kernel function.
 				blockSizeX = 1024;
@@ -274,30 +292,45 @@ public class CUCompressor extends Compressor {
 						limitCoeffKernelParam, null);
 				cuCtxSynchronize();
 				JCuda.cudaStreamSynchronize(stream);
+			} catch (Exception e) {
+				LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform limit coeff kernel.");
+				throw new IllegalStateException(e);
+			}
 
+			try {
 				// compute SumSquareErr = sum(E.^2)
 				gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
 				JCudaDriver.cuLaunchKernel(sumSquareErrorKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
 						sumSquareErrorKernelParams, null);
 				cuCtxSynchronize();
 				JCuda.cudaStreamSynchronize(stream);
-
 			} catch (Exception e) {
-				LOGGER.log(Level.WARNING, "cuBlass Error.");
+				LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform sum square error computation.");
 				throw new IllegalStateException(e);
 			}
-			// find min sum square error idx
+
 			int minSSEIdx = -1;
-			minSSEIdx = JCublas.cublasIsamin(nBatch, dSSEArrays, 1);
-			float[] sse = new float[1];
-			cudaMemcpy(Pointer.to(sse), dSSEArrays.withByteOffset(Sizeof.FLOAT * (minSSEIdx - 1)), Sizeof.FLOAT,
-					cudaMemcpyDeviceToHost);
+			float[] sse = new float[] { Float.POSITIVE_INFINITY };
+			try {
+				// find min sum square error idx
+				minSSEIdx = JCublas.cublasIsamin(nBatch, dSSEArrays, 1);
+				cudaMemcpy(Pointer.to(sse), dSSEArrays.withByteOffset(Sizeof.FLOAT * (minSSEIdx - 1)), Sizeof.FLOAT,
+						cudaMemcpyDeviceToHost);
+			} catch (Exception e) {
+				LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform find minimum sum square error index.");
+				throw new IllegalStateException(e);
+			}
 
 			batcTime = batcTime + (System.nanoTime() - batcTimeTick);
 
 			float[] codeBuffer = new float[nCoeff];
-			cudaMemcpy(Pointer.to(codeBuffer), dCArrays.withByteOffset(Sizeof.FLOAT * nCoeff * (minSSEIdx - 1)),
-					Sizeof.FLOAT * nCoeff, cudaMemcpyDeviceToHost);
+			try {
+				cudaMemcpy(Pointer.to(codeBuffer), dCArrays.withByteOffset(Sizeof.FLOAT * nCoeff * (minSSEIdx - 1)),
+						Sizeof.FLOAT * nCoeff, cudaMemcpyDeviceToHost);
+			} catch (Exception e) {
+				LOGGER.log(Level.WARNING, "cuBlass Error : Can not gather coefficients result.");
+				throw new IllegalStateException(e);
+			}
 
 			// store minimum value of self similarity
 			for (int i = 0; i < nCoeff; i++) {
