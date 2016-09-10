@@ -1,6 +1,6 @@
 extern "C"
 __global__ void memSetKernel(
-int nBatch,int rbs,int nCoeff,int nDScale, int dbStopIdx,int dScale, float regularize,
+int nBatch,int rbs,int nDegree,int nDScale, int dbStopIdx,int dBaseScale, float regularize,
 
 float *data,float *dataRev, // array of data and reverse data
 float *R, // array of range
@@ -20,8 +20,8 @@ float **EP, float **SP
     int taskIdx = blockIdx.x * blockDim.x + threadIdx.x;
     if (taskIdx < nBatch)
     {
-		int dColStart = taskIdx % (nBatch/2);
 		// initialize domain arrays
+		int nCoeff = ((nDegree - 1) * nDScale + 1);
 		int dpOffset = (taskIdx * rbs * nCoeff);
 		for(int i = 0; i < rbs; i++){
 			DA[dpOffset + i] = 1.0f; // power 0
@@ -29,24 +29,30 @@ float **EP, float **SP
 		for(int i = 0; i < rbs; i++){
 			DA[dpOffset + i + rbs] = 0.0f; // power 1
 		}
-		// vec sumation
-		if(taskIdx < (nBatch/2)){
+		
+		int dStartIdx = taskIdx % (nBatch/2);
+		//int dStart = @(k ,s) k + (n-s) * (b/2);
+		//int dEnd = @(k ,s) k + (n+s) * (b/2) - 1;
+		
+		for(int ds = 1; ds <= nDScale; ds++){
+			// vec sumation
+			int dScale = dBaseScale * ds; // base_scale * current_scale
 			for(int i = 0; i < dScale; i++){
 				for(int j = 0; j < rbs; j++){
-					DA[dpOffset + rbs + j] = DA[dpOffset + rbs + j] + data[dColStart + j*dScale + i];
+					if(taskIdx < (nBatch/2)){
+						DA[dpOffset + rbs + j] = DA[dpOffset + rbs + j] + data[dStartIdx + j*dScale + i];
+					}else{ // gen reverse domain
+						DA[dpOffset + rbs + j] = DA[dpOffset + rbs + j] + dataRev[dStartIdx + j*dScale+ i];
+					}
 				}
 			}
-		}else{ // gen reverse domain
-			for(int i = 0; i < dScale; i++){
-				for(int j = 0; j < rbs; j++){
-					DA[dpOffset + rbs + j] = DA[dpOffset + rbs + j] + dataRev[dColStart + j*dScale+ i];
-				}
+	
+			// vec scalig
+			for(int j = 0; j < rbs; j++){
+				DA[dpOffset + rbs + j] = DA[dpOffset + rbs + j]/dScale;
 			}
 		}
-		// vec scalig
-		for(int j = 0; j < rbs; j++){
-			DA[dpOffset + rbs + j] = DA[dpOffset + rbs + j]/dScale;
-		}
+		
 		// calculate next degree
 		for(int j = 2; j < nCoeff; j++){
 			int degreePad = (j*rbs);
