@@ -31,25 +31,23 @@ float **EP, float **SP
 		}
 		
 		int dStartIdx = taskIdx % (nBatch/2);
-		//int dStart = @(k ,s) k + (n-s) * (b/2);
-		//int dEnd = @(k ,s) k + (n+s) * (b/2) - 1;
-		
 		for(int ds = 1; ds <= nDScale; ds++){
 			// vec sumation
+			int mapDStart = dStartIdx + (nDScale - ds) * (rbs/2);
 			int dScale = dBaseScale * ds; // base_scale * current_scale
 			for(int i = 0; i < dScale; i++){
 				for(int j = 0; j < rbs; j++){
 					if(taskIdx < (nBatch/2)){
-						DA[dpOffset + rbs + j] = DA[dpOffset + rbs + j] + data[dStartIdx + j*dScale + i];
+						DA[dpOffset + rbs*ds + j] = DA[dpOffset + rbs*ds + j] + data[mapDStart + j*dScale + i];
 					}else{ // gen reverse domain
-						DA[dpOffset + rbs + j] = DA[dpOffset + rbs + j] + dataRev[dStartIdx + j*dScale+ i];
+						DA[dpOffset + rbs*ds + j] = DA[dpOffset + rbs*ds + j] + dataRev[mapDStart + j*dScale+ i];
 					}
 				}
 			}
 	
 			// vec scalig
 			for(int j = 0; j < rbs; j++){
-				DA[dpOffset + rbs + j] = DA[dpOffset + rbs + j]/dScale;
+				DA[dpOffset + rbs*ds + j] = DA[dpOffset + rbs*ds + j]/dScale;
 			}
 		}
 		
