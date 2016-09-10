@@ -299,7 +299,7 @@ public class Compressor implements ProcessorAPIv1 {
 		return coeff;
 	}
 
-	private float[] composeCode(final int nCoeff, final float rangeIdx, final int rangeBlockSize, int dbIdx, int rev,
+	private float[] composeCode(final int nCoeff, final float sumSquareError, final int rangeBlockSize, int dbIdx, int rev,
 			float[] coeff) {
 		float[] codeChunk = new float[nCoeff + 3];
 		// store minimum value of self similarity
@@ -314,8 +314,8 @@ public class Compressor implements ProcessorAPIv1 {
 
 		// set range block size
 		codeChunk[nCoeff + 1] = rangeBlockSize;
-		// range block size boundary
-		codeChunk[nCoeff + 2] = rangeIdx;
+		// sum square error
+		codeChunk[nCoeff + 2] = sumSquareError;
 		// domain scale
 		return codeChunk;
 	}
@@ -374,7 +374,7 @@ public class Compressor implements ProcessorAPIv1 {
 					// parameters that
 					// less than stored parameter s
 					bestR = sumSqrError;
-					codeChunk = composeCode(nCoeff, rangeIdx, rangeBlockSize, dbIdx, rev, coeff);
+					codeChunk = composeCode(nCoeff, sumSqrError, rangeBlockSize, dbIdx, rev, coeff);
 				}
 			}
 		}

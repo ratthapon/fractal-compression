@@ -289,6 +289,9 @@ public class CUCompressor extends Compressor {
 			// find min sum square error idx
 			int minSSEIdx = -1;
 			minSSEIdx = JCublas.cublasIsamin(nBatch, dSSEArrays, 1);
+			float[] sse = new float[1];
+			cudaMemcpy(Pointer.to(sse), dSSEArrays.withByteOffset(Sizeof.FLOAT * (minSSEIdx - 1)), Sizeof.FLOAT,
+					cudaMemcpyDeviceToHost);
 
 			batcTime = batcTime + (System.nanoTime() - batcTimeTick);
 
@@ -311,7 +314,7 @@ public class CUCompressor extends Compressor {
 			// set range block size
 			code[fIdx][nCoeff + 1] = rbs;
 			// range block size boundary
-			code[fIdx][nCoeff + 2] = fIdx;
+			code[fIdx][nCoeff + 2] = sse[0];
 
 			JCuda.cudaStreamSynchronize(stream);
 
