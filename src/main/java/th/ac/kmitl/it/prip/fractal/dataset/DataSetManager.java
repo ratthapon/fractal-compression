@@ -226,6 +226,7 @@ public class DataSetManager implements DataSetAPIv1 {
 	private void writeaudio(String fileName, double[] audioData, String audioExtension, int sampleRate)
 			throws IOException {
 		try {
+			Paths.get(fileName).getParent().toFile().mkdirs();
 			switch (audioExtension) {
 			case "wav":
 				writeToWav(fileName + "." + audioExtension, audioData, sampleRate);

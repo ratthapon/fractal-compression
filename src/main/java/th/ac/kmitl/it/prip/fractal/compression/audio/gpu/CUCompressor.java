@@ -153,7 +153,7 @@ public class CUCompressor extends Compressor {
 		Pointer dR = new Pointer(); // range
 
 		// large allocation
-		cudaMalloc(dDArrays, maxNBatch * Sizeof.FLOAT * maxRBS * nCoeff * nDScale);
+		cudaMalloc(dDArrays, maxNBatch * Sizeof.FLOAT * maxRBS * nCoeff);
 		cudaMalloc(dRArrays, maxNBatch * Sizeof.FLOAT * maxRBS);
 		cudaMalloc(dAArrays, maxNBatch * Sizeof.FLOAT * nCoeff * nCoeff);
 		cudaMalloc(dBArrays, maxNBatch * Sizeof.FLOAT * nCoeff);
@@ -205,7 +205,7 @@ public class CUCompressor extends Compressor {
 			// Set up the kernel parameters: A pointer to an array
 			// of pointers which point to the actual values.
 			Pointer memSetKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
-					Pointer.to(new int[] { nCoeff }), Pointer.to(new int[] { nDScale }),
+					Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nDScale }),
 					Pointer.to(new int[] { dbStopIdx }), Pointer.to(new int[] { parameters.getDomainScale() }),
 					Pointer.to(new float[] { parameters.getRegularize() }), Pointer.to(deviceData),
 					Pointer.to(deviceDataRev), Pointer.to(dR),
@@ -272,6 +272,7 @@ public class CUCompressor extends Compressor {
 				LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform (X'Y) computation.");
 				throw new IllegalStateException(e);
 			}
+
 			try {
 				// compute pinv(X'X)*(X'Y)
 				JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, nCoeff, 1, nCoeff,
