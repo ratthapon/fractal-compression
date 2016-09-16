@@ -287,12 +287,14 @@ public class CUCompressor extends Compressor {
 			try {
 				// limit coeff
 				// Call the kernel function.
-				blockSizeX = 1024;
-				gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
-				JCudaDriver.cuLaunchKernel(limitCoeffKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-						limitCoeffKernelParam, null);
-				cuCtxSynchronize();
-				JCuda.cudaStreamSynchronize(stream);
+				if (nCoeff == 2) {
+					blockSizeX = 1024;
+					gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
+					JCudaDriver.cuLaunchKernel(limitCoeffKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+							limitCoeffKernelParam, null);
+					cuCtxSynchronize();
+					JCuda.cudaStreamSynchronize(stream);
+				}
 			} catch (Exception e) {
 				LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform limit coeff kernel.");
 				throw new IllegalStateException(e);
