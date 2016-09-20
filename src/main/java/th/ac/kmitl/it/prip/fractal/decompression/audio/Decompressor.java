@@ -45,10 +45,16 @@ public class Decompressor {
 				int bufferSize = (int) (codes[fIdx][PART_SIZE_ELEMENT] * parameters.getAlpha());
 				double[] domain = new double[bufferSize * parameters.getDomainScale()];
 				int domainIdx = Math.abs((int) (codes[fIdx][DOMAIN_INDEX_ELEMENT] * parameters.getAlpha())) - 1;
-				domain = resample(Arrays.copyOfRange(audioData, domainIdx, domainIdx + domain.length));
+				
+				// get domain from data, include reverse
 				if (codes[fIdx][DOMAIN_INDEX_ELEMENT] < 0) { // if should be reverse
-					ArrayUtils.reverse(domain);
+					double[] revAudioData = Arrays.copyOfRange(audioData, 0, audioData.length);
+					ArrayUtils.reverse(revAudioData);
+					domain = resample(Arrays.copyOfRange(revAudioData, domainIdx, domainIdx + domain.length));
+				} else {
+					domain = resample(Arrays.copyOfRange(audioData, domainIdx, domainIdx + domain.length));
 				}
+				
 
 				double[] buffer = interpolateBlock(domain, fIdx, nCoeff, bufferSize);
 				for (int i = 0; i < buffer.length; i++) {
