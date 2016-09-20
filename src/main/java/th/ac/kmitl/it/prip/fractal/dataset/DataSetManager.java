@@ -209,6 +209,7 @@ public class DataSetManager implements DataSetAPIv1 {
 
 	private void writecode(String fileName, double[][] codeData, String codeExtention) throws IOException {
 		try {
+			Paths.get(fileName).getParent().toFile().mkdirs();
 			switch (codeExtention) {
 			case "mat":
 				writeToMat(fileName + "." + codeExtention, codeData);
@@ -226,6 +227,7 @@ public class DataSetManager implements DataSetAPIv1 {
 	private void writeaudio(String fileName, double[] audioData, String audioExtension, int sampleRate)
 			throws IOException {
 		try {
+			Paths.get(fileName).getParent().toFile().mkdirs();
 			switch (audioExtension) {
 			case "wav":
 				writeToWav(fileName + "." + audioExtension, audioData, sampleRate);
