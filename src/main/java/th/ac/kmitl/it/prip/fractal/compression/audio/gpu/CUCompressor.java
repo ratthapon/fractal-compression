@@ -51,37 +51,60 @@ public class CUCompressor extends Compressor {
 		JCuda.setExceptionsEnabled(true);
 
 		// Initialize the driver and create a context for the first device.
-		cuInit(0);
-		CUdevice device = new CUdevice();
-		cuDeviceGet(device, 0);
-		CUcontext context = new CUcontext();
-		cuCtxCreate(context, 0, device);
+		try {
+			cuInit(0);
+			CUdevice device = new CUdevice();
+			cuDeviceGet(device, 0);
+			CUcontext context = new CUcontext();
+			cuCtxCreate(context, 0, device);
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "cuBlass Error : Can not initialize cuda device or cuda context.");
+			throw new IllegalStateException(e);
+		}
 
 		// Load the ptx file.
-		CUmodule reverseVecModule = new CUmodule();
-		JCudaDriver.cuModuleLoad(reverseVecModule, "classes/reverseVec.ptx");
+		CUmodule reverseVecModule;
+		CUmodule memSetModule;
+		CUmodule limitCoeffModule;
+		CUmodule sumSquareErrorModule;
+		try {
+			reverseVecModule = new CUmodule();
+			JCudaDriver.cuModuleLoad(reverseVecModule, "classes/reverseVec.ptx");
 
-		CUmodule memSetModule = new CUmodule();
-		JCudaDriver.cuModuleLoad(memSetModule, "classes/memSetKernel.ptx");
+			memSetModule = new CUmodule();
+			JCudaDriver.cuModuleLoad(memSetModule, "classes/memSetKernel.ptx");
 
-		CUmodule limitCoeffModule = new CUmodule();
-		JCudaDriver.cuModuleLoad(limitCoeffModule, "classes/limitCoeff.ptx");
+			limitCoeffModule = new CUmodule();
+			JCudaDriver.cuModuleLoad(limitCoeffModule, "classes/limitCoeff.ptx");
 
-		CUmodule sumSquareErrorModule = new CUmodule();
-		JCudaDriver.cuModuleLoad(sumSquareErrorModule, "classes/sumSquareError.ptx");
+			sumSquareErrorModule = new CUmodule();
+			JCudaDriver.cuModuleLoad(sumSquareErrorModule, "classes/sumSquareError.ptx");
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "cuBlass Error : Can not load ptx files.");
+			throw new IllegalStateException(e);
+		}
 
 		// Obtain a function pointer to the kernel function.
-		CUfunction reverseVec = new CUfunction();
-		JCudaDriver.cuModuleGetFunction(reverseVec, reverseVecModule, "reverseVec");
+		CUfunction reverseVec;
+		CUfunction memSetKernel;
+		CUfunction limitCoeffKernel;
+		CUfunction sumSquareErrorKernel;
+		try {
+			reverseVec = new CUfunction();
+			JCudaDriver.cuModuleGetFunction(reverseVec, reverseVecModule, "reverseVec");
 
-		CUfunction memSetKernel = new CUfunction();
-		JCudaDriver.cuModuleGetFunction(memSetKernel, memSetModule, "memSetKernel");
+			memSetKernel = new CUfunction();
+			JCudaDriver.cuModuleGetFunction(memSetKernel, memSetModule, "memSetKernel");
 
-		CUfunction limitCoeffKernel = new CUfunction();
-		JCudaDriver.cuModuleGetFunction(limitCoeffKernel, limitCoeffModule, "limitCoeff");
+			limitCoeffKernel = new CUfunction();
+			JCudaDriver.cuModuleGetFunction(limitCoeffKernel, limitCoeffModule, "limitCoeff");
 
-		CUfunction sumSquareErrorKernel = new CUfunction();
-		JCudaDriver.cuModuleGetFunction(sumSquareErrorKernel, sumSquareErrorModule, "sumSquareError");
+			sumSquareErrorKernel = new CUfunction();
+			JCudaDriver.cuModuleGetFunction(sumSquareErrorKernel, sumSquareErrorModule, "sumSquareError");
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "cuBlass Error : Can not load CU functions.");
+			throw new IllegalStateException(e);
+		}
 
 		final int h2d = cudaMemcpyHostToDevice;
 		final int nDScale = parameters.getNDScale();
@@ -153,14 +176,8 @@ public class CUCompressor extends Compressor {
 		Pointer dR = new Pointer(); // range
 
 		// large allocation
-		cudaMalloc(dDArrays, maxNBatch * Sizeof.FLOAT * maxRBS * nCoeff);
-		cudaMalloc(dRArrays, maxNBatch * Sizeof.FLOAT * maxRBS);
-		cudaMalloc(dAArrays, maxNBatch * Sizeof.FLOAT * nCoeff * nCoeff);
-		cudaMalloc(dBArrays, maxNBatch * Sizeof.FLOAT * nCoeff);
-		cudaMalloc(dIAArrays, maxNBatch * Sizeof.FLOAT * nCoeff * nCoeff);
-		cudaMalloc(dCArrays, maxNBatch * Sizeof.FLOAT * nCoeff);
-		cudaMalloc(dEArrays, maxNBatch * Sizeof.FLOAT * maxRBS);
-		cudaMalloc(dSSEArrays, maxNBatch * Sizeof.FLOAT);
+		batchCudaArraysAlloc(nCoeff, maxRBS, maxNBatch, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays, dCArrays,
+				dEArrays, dSSEArrays);
 
 		cudaMalloc(dInfoArray, maxNBatch * Sizeof.INT);
 		cudaMalloc(dR, Sizeof.FLOAT * maxRBS);
@@ -174,14 +191,8 @@ public class CUCompressor extends Compressor {
 		Pointer dEAP = new Pointer();
 		Pointer dSSEAP = new Pointer();
 
-		cudaMalloc(dDAP, maxNBatch * Sizeof.POINTER);
-		cudaMalloc(dRAP, maxNBatch * Sizeof.POINTER);
-		cudaMalloc(dAAP, maxNBatch * Sizeof.POINTER);
-		cudaMalloc(dBAP, maxNBatch * Sizeof.POINTER);
-		cudaMalloc(dIAAP, maxNBatch * Sizeof.POINTER);
-		cudaMalloc(dCAP, maxNBatch * Sizeof.POINTER);
-		cudaMalloc(dEAP, maxNBatch * Sizeof.POINTER);
-		cudaMalloc(dSSEAP, maxNBatch * Sizeof.POINTER);
+		// allocate arrays pointers
+		batchCudaArraysPointerAlloc(maxNBatch, dDAP, dRAP, dAAP, dBAP, dIAAP, dCAP, dEAP, dSSEAP);
 		allocateTime = System.nanoTime() - allocateTimeTick;
 
 		// each range block
@@ -336,21 +347,7 @@ public class CUCompressor extends Compressor {
 			}
 
 			// store minimum value of self similarity
-			for (int i = 0; i < nCoeff; i++) {
-				code[fIdx][i] = codeBuffer[i];
-			}
-
-			// set domain index
-			code[fIdx][nCoeff] = minSSEIdx;
-			if (minSSEIdx <= nBatch / 2) {
-				code[fIdx][nCoeff] = minSSEIdx;
-			} else {
-				code[fIdx][nCoeff] = -(nBatch - minSSEIdx + 2);
-			}
-			// set range block size
-			code[fIdx][nCoeff + 1] = rbs;
-			// range block size boundary
-			code[fIdx][nCoeff + 2] = sse[0];
+			code[fIdx] = composeCode(minSSEIdx, code, codeBuffer, nCoeff, rbs, nBatch, sse);
 
 			JCuda.cudaStreamSynchronize(stream);
 
@@ -375,6 +372,52 @@ public class CUCompressor extends Compressor {
 		cudaDeviceReset();
 		isDone = true;
 		return code; // code of each file
+	}
+
+	private double[] composeCode(int minSSEIdx, double[][] code, float[] codeBuffer, final int nCoeff, final int rbs,
+			int nBatch, float[] sse) {
+		double[] codeChunk = new double[nCoeff + +3];
+		for (int i = 0; i < nCoeff; i++) {
+			codeChunk[i] = codeBuffer[i];
+		}
+
+		// set domain index
+		codeChunk[nCoeff] = minSSEIdx;
+		if (minSSEIdx <= nBatch / 2) {
+			codeChunk[nCoeff] = minSSEIdx;
+		} else {
+			codeChunk[nCoeff] = -(nBatch - minSSEIdx + 2);
+		}
+		// set range block size
+		codeChunk[nCoeff + 1] = rbs;
+		// range block size boundary
+		codeChunk[nCoeff + 2] = sse[0];
+		return codeChunk;
+	}
+
+	private void batchCudaArraysPointerAlloc(int maxNBatch, Pointer dDAP, Pointer dRAP, Pointer dAAP, Pointer dBAP,
+			Pointer dIAAP, Pointer dCAP, Pointer dEAP, Pointer dSSEAP) {
+		cudaMalloc(dDAP, maxNBatch * Sizeof.POINTER);
+		cudaMalloc(dRAP, maxNBatch * Sizeof.POINTER);
+		cudaMalloc(dAAP, maxNBatch * Sizeof.POINTER);
+		cudaMalloc(dBAP, maxNBatch * Sizeof.POINTER);
+		cudaMalloc(dIAAP, maxNBatch * Sizeof.POINTER);
+		cudaMalloc(dCAP, maxNBatch * Sizeof.POINTER);
+		cudaMalloc(dEAP, maxNBatch * Sizeof.POINTER);
+		cudaMalloc(dSSEAP, maxNBatch * Sizeof.POINTER);
+	}
+
+	private void batchCudaArraysAlloc(final int nCoeff, int maxRBS, int maxNBatch, Pointer dDArrays, Pointer dRArrays,
+			Pointer dAArrays, Pointer dBArrays, Pointer dIAArrays, Pointer dCArrays, Pointer dEArrays,
+			Pointer dSSEArrays) {
+		cudaMalloc(dDArrays, maxNBatch * Sizeof.FLOAT * maxRBS * nCoeff);
+		cudaMalloc(dRArrays, maxNBatch * Sizeof.FLOAT * maxRBS);
+		cudaMalloc(dAArrays, maxNBatch * Sizeof.FLOAT * nCoeff * nCoeff);
+		cudaMalloc(dBArrays, maxNBatch * Sizeof.FLOAT * nCoeff);
+		cudaMalloc(dIAArrays, maxNBatch * Sizeof.FLOAT * nCoeff * nCoeff);
+		cudaMalloc(dCArrays, maxNBatch * Sizeof.FLOAT * nCoeff);
+		cudaMalloc(dEArrays, maxNBatch * Sizeof.FLOAT * maxRBS);
+		cudaMalloc(dSSEArrays, maxNBatch * Sizeof.FLOAT);
 	}
 
 	private void batchCudaMemFree(Pointer... cuPointers) {
