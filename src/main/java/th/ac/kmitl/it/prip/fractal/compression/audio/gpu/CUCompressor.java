@@ -36,6 +36,18 @@ import th.ac.kmitl.it.prip.fractal.compression.audio.Compressor;
 public class CUCompressor extends Compressor {
 	private static final Logger LOGGER = Logger.getLogger(CUCompressor.class.getName());
 
+	// ptx modules
+	private static CUmodule reverseVecModule;
+	private static CUmodule memSetModule;
+	private static CUmodule limitCoeffModule;
+	private static CUmodule sumSquareErrorModule;
+
+	// cuda kernel functions
+	private static CUfunction reverseVec;
+	private static CUfunction memSetKernel;
+	private static CUfunction limitCoeffKernel;
+	private static CUfunction sumSquareErrorKernel;
+
 	public CUCompressor(float[] inputAudioData, Parameters compressParameters) {
 		super(inputAudioData, compressParameters);
 		data = new float[inputAudioData.length];
@@ -70,48 +82,10 @@ public class CUCompressor extends Compressor {
 			}
 
 			// Load the ptx file.
-			CUmodule reverseVecModule;
-			CUmodule memSetModule;
-			CUmodule limitCoeffModule;
-			CUmodule sumSquareErrorModule;
-			try {
-				reverseVecModule = new CUmodule();
-				JCudaDriver.cuModuleLoad(reverseVecModule, "classes/reverseVec.ptx");
-
-				memSetModule = new CUmodule();
-				JCudaDriver.cuModuleLoad(memSetModule, "classes/memSetKernel.ptx");
-
-				limitCoeffModule = new CUmodule();
-				JCudaDriver.cuModuleLoad(limitCoeffModule, "classes/limitCoeff.ptx");
-
-				sumSquareErrorModule = new CUmodule();
-				JCudaDriver.cuModuleLoad(sumSquareErrorModule, "classes/sumSquareError.ptx");
-			} catch (Exception e) {
-				LOGGER.log(Level.SEVERE, "cuBlass Error : Can not load ptx files.");
-				throw new IllegalStateException(e);
-			}
+			loadPTXModules();
 
 			// Obtain a function pointer to the kernel function.
-			CUfunction reverseVec;
-			CUfunction memSetKernel;
-			CUfunction limitCoeffKernel;
-			CUfunction sumSquareErrorKernel;
-			try {
-				reverseVec = new CUfunction();
-				JCudaDriver.cuModuleGetFunction(reverseVec, reverseVecModule, "reverseVec");
-
-				memSetKernel = new CUfunction();
-				JCudaDriver.cuModuleGetFunction(memSetKernel, memSetModule, "memSetKernel");
-
-				limitCoeffKernel = new CUfunction();
-				JCudaDriver.cuModuleGetFunction(limitCoeffKernel, limitCoeffModule, "limitCoeff");
-
-				sumSquareErrorKernel = new CUfunction();
-				JCudaDriver.cuModuleGetFunction(sumSquareErrorKernel, sumSquareErrorModule, "sumSquareError");
-			} catch (Exception e) {
-				LOGGER.log(Level.SEVERE, "cuBlass Error : Can not load CU functions.");
-				throw new IllegalStateException(e);
-			}
+			loadCUKernelFunctions();
 
 			final int h2d = cudaMemcpyHostToDevice;
 			final int nDScale = parameters.getNDScale();
@@ -410,6 +384,46 @@ public class CUCompressor extends Compressor {
 			throw new IllegalStateException(e);
 		}
 		return code; // code of each file
+	}
+
+	private void loadCUKernelFunctions() {
+		// Obtain a function pointer to the kernel function.
+		try {
+			reverseVec = new CUfunction();
+			JCudaDriver.cuModuleGetFunction(reverseVec, reverseVecModule, "reverseVec");
+
+			memSetKernel = new CUfunction();
+			JCudaDriver.cuModuleGetFunction(memSetKernel, memSetModule, "memSetKernel");
+
+			limitCoeffKernel = new CUfunction();
+			JCudaDriver.cuModuleGetFunction(limitCoeffKernel, limitCoeffModule, "limitCoeff");
+
+			sumSquareErrorKernel = new CUfunction();
+			JCudaDriver.cuModuleGetFunction(sumSquareErrorKernel, sumSquareErrorModule, "sumSquareError");
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "cuBlass Error : Can not load CU functions.");
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private void loadPTXModules() {
+		// Load the ptx file.
+		try {
+			reverseVecModule = new CUmodule();
+			JCudaDriver.cuModuleLoad(reverseVecModule, "classes/reverseVec.ptx");
+
+			memSetModule = new CUmodule();
+			JCudaDriver.cuModuleLoad(memSetModule, "classes/memSetKernel.ptx");
+
+			limitCoeffModule = new CUmodule();
+			JCudaDriver.cuModuleLoad(limitCoeffModule, "classes/limitCoeff.ptx");
+
+			sumSquareErrorModule = new CUmodule();
+			JCudaDriver.cuModuleLoad(sumSquareErrorModule, "classes/sumSquareError.ptx");
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "cuBlass Error : Can not load ptx files.");
+			throw new IllegalStateException(e);
+		}
 	}
 
 	private double[] composeCode(int minSSEIdx, double[][] code, float[] codeBuffer, final int nCoeff, final int rbs,
