@@ -270,8 +270,6 @@ public class CUCompressor extends Compressor {
 					// limit coeff
 					// Call the kernel function.
 					if (nCoeff == 2) {
-						blockSizeX = 1024;
-						gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
 						JCudaDriver.cuLaunchKernel(limitCoeffKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
 								limitCoeffKernelParam, null);
 						cuCtxSynchronize();
@@ -284,7 +282,6 @@ public class CUCompressor extends Compressor {
 
 				try {
 					// compute SumSquareErr = sum(E.^2)
-					gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
 					JCudaDriver.cuLaunchKernel(sumSquareErrorKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
 							sumSquareErrorKernelParams, null);
 					cuCtxSynchronize();
