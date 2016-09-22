@@ -48,6 +48,10 @@ public class CUCompressor extends Compressor {
 	private static CUfunction limitCoeffKernel;
 	private static CUfunction sumSquareErrorKernel;
 
+	// BLAS handler and stream handler
+	cudaStream_t stream;
+	cublasHandle cublasHandle;
+
 	// Set up the kernel parameters: A pointer to an array
 	// of pointers which point to the actual values.
 	Pointer memSetKernelParams;
@@ -122,19 +126,6 @@ public class CUCompressor extends Compressor {
 
 			// preparing device audio data
 			setDeviceAudioData(h2d, blockSizeX, gridSizeX);
-
-			cublasHandle cublasHandle;
-			cudaStream_t stream;
-			try {
-				cublasHandle = new cublasHandle();
-				JCublas2.cublasCreate(cublasHandle);
-				stream = new cudaStream_t();
-				cudaStreamCreate(stream);
-				cublasSetStream(cublasHandle, stream);
-			} catch (Exception e) {
-				LOGGER.log(Level.SEVERE, "cuBlass Error : Can not set cu stream handler.");
-				throw new IllegalStateException(e);
-			}
 
 			// pre allocate at maximum
 			allocateTimeTick = System.nanoTime();
@@ -375,8 +366,8 @@ public class CUCompressor extends Compressor {
 					Pointer.to(deviceDataRev));
 
 			// Call the kernel function.
-			JCudaDriver.cuLaunchKernel(reverseVec, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-					reverseVecKernelParams, null);
+			JCudaDriver.cuLaunchKernel(reverseVec, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null, reverseVecKernelParams,
+					null);
 			cuCtxSynchronize();
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE, "cuBlass Error : Can not set input data and reverse data.");
@@ -395,6 +386,18 @@ public class CUCompressor extends Compressor {
 			cuCtxCreate(context, 0, device);
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE, "cuBlass Error : Can not initialize cuda device or cuda context.");
+			throw new IllegalStateException(e);
+		}
+
+		// set CuBLAS handler and CuStream
+		try {
+			cublasHandle = new cublasHandle();
+			JCublas2.cublasCreate(cublasHandle);
+			stream = new cudaStream_t();
+			cudaStreamCreate(stream);
+			cublasSetStream(cublasHandle, stream);
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "cuBlass Error : Can not set cu stream handler.");
 			throw new IllegalStateException(e);
 		}
 	}
