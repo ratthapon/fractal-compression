@@ -48,6 +48,19 @@ public class CUCompressor extends Compressor {
 	private static CUfunction limitCoeffKernel;
 	private static CUfunction sumSquareErrorKernel;
 
+	// Set up the kernel parameters: A pointer to an array
+	// of pointers which point to the actual values.
+	Pointer memSetKernelParams;
+	Pointer reverseVecKernelParams;
+	// coefflimit kernel
+	Pointer limitCoeffKernelParam;
+	// sumSquareError kernel
+	Pointer sumSquareErrorKernelParams;
+
+	// device data
+	Pointer deviceData;
+	Pointer deviceDataRev;
+
 	public CUCompressor(float[] inputAudioData, Parameters compressParameters) throws IllegalStateException {
 		super(inputAudioData, compressParameters);
 
@@ -104,37 +117,11 @@ public class CUCompressor extends Compressor {
 			long batcTime = 0;
 			long freeTime = 0;
 
-			int blockSizeX;
-			int gridSizeX;
+			int blockSizeX = 1024;
+			int gridSizeX = (int) Math.ceil((double) nSamples / blockSizeX);
 
 			// preparing device audio data
-			Pointer deviceData;
-			Pointer deviceDataRev;
-			Pointer reverseVecKernelParams;
-			try {
-				deviceData = new Pointer();
-				deviceDataRev = new Pointer();
-
-				// init audio data power 0
-				cudaMalloc(deviceData, Sizeof.FLOAT * nSamples);
-				cudaMalloc(deviceDataRev, Sizeof.FLOAT * nSamples);
-				cudaMemcpy(deviceData, Pointer.to(data), Sizeof.FLOAT * nSamples, h2d);
-
-				// Set up the kernel parameters: A pointer to an array
-				// of pointers which point to the actual values.
-				reverseVecKernelParams = Pointer.to(Pointer.to(new int[] { nSamples }), Pointer.to(deviceData),
-						Pointer.to(deviceDataRev));
-
-				// Call the kernel function.
-				blockSizeX = 1024;
-				gridSizeX = (int) Math.ceil((double) nSamples / blockSizeX);
-				JCudaDriver.cuLaunchKernel(reverseVec, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-						reverseVecKernelParams, null);
-				cuCtxSynchronize();
-			} catch (Exception e) {
-				LOGGER.log(Level.SEVERE, "cuBlass Error : Can not set input data and reverse data.");
-				throw new IllegalStateException(e);
-			}
+			setDeviceAudioData(h2d, blockSizeX, gridSizeX);
 
 			cublasHandle cublasHandle;
 			cudaStream_t stream;
@@ -201,13 +188,6 @@ public class CUCompressor extends Compressor {
 
 				int nBatch = ((dbStopIdx - dbStartIdx + 1) / parameters.getDStep()) * 2;
 
-				// Set up the kernel parameters: A pointer to an array
-				// of pointers which point to the actual values.
-				Pointer memSetKernelParams;
-				// coefflimit kernel
-				Pointer limitCoeffKernelParam;
-				// sumSquareError kernel
-				Pointer sumSquareErrorKernelParams;
 				try {
 					cudaMemcpy(dR, deviceData.withByteOffset(Sizeof.FLOAT * bColStart), Sizeof.FLOAT * rbs,
 							cudaMemcpyDeviceToDevice);
@@ -376,6 +356,32 @@ public class CUCompressor extends Compressor {
 			throw new IllegalStateException(e);
 		}
 		return code; // code of each file
+	}
+
+	private void setDeviceAudioData(final int h2d, int blockSizeX, int gridSizeX) {
+		// preparing device audio data
+		try {
+			deviceData = new Pointer();
+			deviceDataRev = new Pointer();
+
+			// init audio data power 0
+			cudaMalloc(deviceData, Sizeof.FLOAT * nSamples);
+			cudaMalloc(deviceDataRev, Sizeof.FLOAT * nSamples);
+			cudaMemcpy(deviceData, Pointer.to(data), Sizeof.FLOAT * nSamples, h2d);
+
+			// Set up the kernel parameters: A pointer to an array
+			// of pointers which point to the actual values.
+			reverseVecKernelParams = Pointer.to(Pointer.to(new int[] { nSamples }), Pointer.to(deviceData),
+					Pointer.to(deviceDataRev));
+
+			// Call the kernel function.
+			JCudaDriver.cuLaunchKernel(reverseVec, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+					reverseVecKernelParams, null);
+			cuCtxSynchronize();
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "cuBlass Error : Can not set input data and reverse data.");
+			throw new IllegalStateException(e);
+		}
 	}
 
 	private void initCudaDevice() throws IllegalStateException {
