@@ -38,32 +38,38 @@ public class CUCompressor extends Compressor {
 
 	// ptx modules
 	private static CUmodule reverseVecModule;
-	private static CUmodule memSetModule;
+	private static CUmodule setDomainPoolModule;
+	private static CUmodule setRangePoolModule;
+	private static CUmodule setCoeffPoolModule;
 	private static CUmodule limitCoeffModule;
 	private static CUmodule sumSquareErrorModule;
 
 	// cuda kernel functions
 	private static CUfunction reverseVec;
-	private static CUfunction memSetKernel;
+	private static CUfunction setDomainPoolKernel;
+	private static CUfunction setRangePoolKernel;
+	private static CUfunction setCoeffPoolKernel;
 	private static CUfunction limitCoeffKernel;
 	private static CUfunction sumSquareErrorKernel;
 
 	// BLAS handler and stream handler
-	cudaStream_t stream;
-	cublasHandle cublasHandle;
+	private cudaStream_t stream;
+	private cublasHandle cublasHandle;
 
 	// Set up the kernel parameters: A pointer to an array
 	// of pointers which point to the actual values.
-	Pointer memSetKernelParams;
-	Pointer reverseVecKernelParams;
+	private Pointer setDomainPoolKernelParams;
+	private Pointer setRangePoolKernelParams;
+	private Pointer setCoeffPoolKernelParams;
+	private Pointer reverseVecKernelParams;
 	// coefflimit kernel
-	Pointer limitCoeffKernelParam;
+	private Pointer limitCoeffKernelParam;
 	// sumSquareError kernel
-	Pointer sumSquareErrorKernelParams;
+	private Pointer sumSquareErrorKernelParams;
 
 	// device data
-	Pointer deviceData;
-	Pointer deviceDataRev;
+	private Pointer deviceData;
+	private Pointer deviceDataRev;
 
 	public CUCompressor(float[] inputAudioData, Parameters compressParameters) throws IllegalStateException {
 		super(inputAudioData, compressParameters);
@@ -183,23 +189,49 @@ public class CUCompressor extends Compressor {
 					cudaMemcpy(dR, deviceData.withByteOffset(Sizeof.FLOAT * bColStart), Sizeof.FLOAT * rbs,
 							cudaMemcpyDeviceToDevice);
 
-					memSetKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
-							Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nDScale }),
-							Pointer.to(new int[] { dbStopIdx }), Pointer.to(new int[] { parameters.getDomainScale() }),
+					setDomainPoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }),
+							Pointer.to(new int[] { rbs }), Pointer.to(new int[] { parameters.getNCoeff() }),
+							Pointer.to(new int[] { nDScale }), Pointer.to(new int[] { parameters.getDomainScale() }),
 							Pointer.to(new float[] { parameters.getRegularize() }), Pointer.to(deviceData),
-							Pointer.to(deviceDataRev), Pointer.to(dR),
+							Pointer.to(deviceDataRev),
 							// pointer to arrays data
-							Pointer.to(dDArrays), Pointer.to(dRArrays), Pointer.to(dAArrays), Pointer.to(dBArrays),
-							Pointer.to(dIAArrays), Pointer.to(dCArrays), Pointer.to(dEArrays), Pointer.to(dSSEArrays),
+							Pointer.to(dDArrays), Pointer.to(dAArrays), Pointer.to(dIAArrays),
 							// pointer to arrays pointer
-							Pointer.to(dDAP), Pointer.to(dRAP), Pointer.to(dAAP), Pointer.to(dBAP), Pointer.to(dIAAP),
-							Pointer.to(dCAP), Pointer.to(dEAP), Pointer.to(dSSEAP));
+							Pointer.to(dDAP), Pointer.to(dAAP), Pointer.to(dIAAP));
+
+					setRangePoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }),
+							Pointer.to(new int[] { rbs }), Pointer.to(new int[] { parameters.getNCoeff() }),
+							Pointer.to(new int[] { nDScale }), Pointer.to(dR),
+							// pointer to arrays data
+							Pointer.to(dRArrays), Pointer.to(dBArrays), Pointer.to(dEArrays),
+							// pointer to arrays pointer
+							Pointer.to(dRAP), Pointer.to(dBAP), Pointer.to(dEAP));
+
+					setCoeffPoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }),
+							Pointer.to(new int[] { rbs }), Pointer.to(new int[] { parameters.getNCoeff() }),
+							Pointer.to(new int[] { nDScale }),
+							// pointer to arrays data
+							Pointer.to(dCArrays), Pointer.to(dSSEArrays),
+							// pointer to arrays pointer
+							Pointer.to(dCAP), Pointer.to(dSSEAP));
 
 					// Call the kernel function.
 					blockSizeX = 1024;
 					gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
-					JCudaDriver.cuLaunchKernel(memSetKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-							memSetKernelParams, null);
+					// JCudaDriver.cuLaunchKernel(memSetKernel, gridSizeX, 1, 1,
+					// blockSizeX, 1, 1, 0, null,
+					// memSetKernelParams, null);
+					// cuCtxSynchronize();
+					JCudaDriver.cuLaunchKernel(setDomainPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+							setDomainPoolKernelParams, null);
+					cuCtxSynchronize();
+
+					JCudaDriver.cuLaunchKernel(setRangePoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+							setRangePoolKernelParams, null);
+					cuCtxSynchronize();
+
+					JCudaDriver.cuLaunchKernel(setCoeffPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+							setCoeffPoolKernelParams, null);
 					cuCtxSynchronize();
 
 					limitCoeffKernelParam = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
@@ -319,7 +351,9 @@ public class CUCompressor extends Compressor {
 
 				JCuda.cudaStreamSynchronize(stream);
 
-				JCuda.cudaFree(memSetKernelParams);
+				JCuda.cudaFree(setDomainPoolKernelParams);
+				JCuda.cudaFree(setRangePoolKernelParams);
+				JCuda.cudaFree(setCoeffPoolKernelParams);
 				JCuda.cudaFree(sumSquareErrorKernelParams);
 
 				prevRBS = rbs;
@@ -375,6 +409,7 @@ public class CUCompressor extends Compressor {
 	private void initCudaDevice() throws IllegalStateException {
 		// Initialize the driver and create a context for the first device.
 		try {
+			cudaDeviceReset();
 			JCuda.setExceptionsEnabled(true);
 			cuInit(0);
 			CUdevice device = new CUdevice();
@@ -405,8 +440,14 @@ public class CUCompressor extends Compressor {
 			reverseVec = new CUfunction();
 			JCudaDriver.cuModuleGetFunction(reverseVec, reverseVecModule, "reverseVec");
 
-			memSetKernel = new CUfunction();
-			JCudaDriver.cuModuleGetFunction(memSetKernel, memSetModule, "memSetKernel");
+			setDomainPoolKernel = new CUfunction();
+			JCudaDriver.cuModuleGetFunction(setDomainPoolKernel, setDomainPoolModule, "setDomainPoolKernel");
+
+			setRangePoolKernel = new CUfunction();
+			JCudaDriver.cuModuleGetFunction(setRangePoolKernel, setRangePoolModule, "setRangePoolKernel");
+
+			setCoeffPoolKernel = new CUfunction();
+			JCudaDriver.cuModuleGetFunction(setCoeffPoolKernel, setCoeffPoolModule, "setCoeffPoolKernel");
 
 			limitCoeffKernel = new CUfunction();
 			JCudaDriver.cuModuleGetFunction(limitCoeffKernel, limitCoeffModule, "limitCoeff");
@@ -425,8 +466,14 @@ public class CUCompressor extends Compressor {
 			reverseVecModule = new CUmodule();
 			JCudaDriver.cuModuleLoad(reverseVecModule, "classes/reverseVec.ptx");
 
-			memSetModule = new CUmodule();
-			JCudaDriver.cuModuleLoad(memSetModule, "classes/memSetKernel.ptx");
+			setDomainPoolModule = new CUmodule();
+			JCudaDriver.cuModuleLoad(setDomainPoolModule, "classes/setDomainPoolKernel.ptx");
+
+			setRangePoolModule = new CUmodule();
+			JCudaDriver.cuModuleLoad(setRangePoolModule, "classes/setRangePoolKernel.ptx");
+
+			setCoeffPoolModule = new CUmodule();
+			JCudaDriver.cuModuleLoad(setCoeffPoolModule, "classes/setCoeffPoolKernel.ptx");
 
 			limitCoeffModule = new CUmodule();
 			JCudaDriver.cuModuleLoad(limitCoeffModule, "classes/limitCoeff.ptx");
