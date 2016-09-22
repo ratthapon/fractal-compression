@@ -69,17 +69,7 @@ public class CUCompressor extends Compressor {
 			}
 
 			// Initialize the driver and create a context for the first device.
-			try {
-				JCuda.setExceptionsEnabled(true);
-				cuInit(0);
-				CUdevice device = new CUdevice();
-				cuDeviceGet(device, 0);
-				CUcontext context = new CUcontext();
-				cuCtxCreate(context, 0, device);
-			} catch (Exception e) {
-				LOGGER.log(Level.SEVERE, "cuBlass Error : Can not initialize cuda device or cuda context.");
-				throw new IllegalStateException(e);
-			}
+			initCudaDevice();
 
 			// Load the ptx file.
 			loadPTXModules();
@@ -384,6 +374,21 @@ public class CUCompressor extends Compressor {
 			throw new IllegalStateException(e);
 		}
 		return code; // code of each file
+	}
+
+	private void initCudaDevice() {
+		// Initialize the driver and create a context for the first device.
+		try {
+			JCuda.setExceptionsEnabled(true);
+			cuInit(0);
+			CUdevice device = new CUdevice();
+			cuDeviceGet(device, 0);
+			CUcontext context = new CUcontext();
+			cuCtxCreate(context, 0, device);
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "cuBlass Error : Can not initialize cuda device or cuda context.");
+			throw new IllegalStateException(e);
+		}
 	}
 
 	private void loadCUKernelFunctions() {
