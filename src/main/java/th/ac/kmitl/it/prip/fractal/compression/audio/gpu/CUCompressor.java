@@ -363,36 +363,24 @@ public class CUCompressor extends Compressor {
 			samplesProgress.addAndGet(rbs);
 		}
 		completeTime = System.currentTimeMillis();
+
 		freeTimeTick = System.nanoTime();
-		JCuda.cudaFree(dR);
-
-		JCuda.cudaFree(reverseVecKernelParams);
-		JCuda.cudaFree(deviceData);
-		JCuda.cudaFree(deviceDataRev);
-
-		JCuda.cudaFree(dDArrays);
-		JCuda.cudaFree(dRArrays);
-		JCuda.cudaFree(dAArrays);
-		JCuda.cudaFree(dBArrays);
-		JCuda.cudaFree(dIAArrays);
-		JCuda.cudaFree(dCArrays);
-		JCuda.cudaFree(dEArrays);
-		JCuda.cudaFree(dSSEArrays);
-		JCuda.cudaFree(dInfoArray);
-
-		JCuda.cudaFree(dDAP);
-		JCuda.cudaFree(dRAP);
-		JCuda.cudaFree(dAAP);
-		JCuda.cudaFree(dBAP);
-		JCuda.cudaFree(dIAAP);
-		JCuda.cudaFree(dCAP);
-		JCuda.cudaFree(dEAP);
-		JCuda.cudaFree(dSSEAP);
+		batchCudaMemFree(deviceData, deviceDataRev, reverseVecKernelParams, dDArrays, dRArrays, dAArrays, dBArrays,
+				dIAArrays, dCArrays, dEArrays, dSSEArrays, dInfoArray, dR, dDAP, dRAP, dAAP, dBAP, dIAAP, dCAP, dEAP,
+				dSSEAP);
 		freeTime = freeTime + (System.nanoTime() - freeTimeTick);
+
 		totalTime = System.nanoTime() - totalTimeTick;
 
 		cudaDeviceReset();
 		isDone = true;
 		return code; // code of each file
+	}
+
+	private void batchCudaMemFree(Pointer... cuPointers) {
+		// iterate over pointers list
+		for (int i = 0; i < cuPointers.length; i++) {
+			JCuda.cudaFree(cuPointers[i]);
+		}
 	}
 }
