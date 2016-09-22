@@ -3,6 +3,7 @@ package th.ac.kmitl.it.prip.fractal;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -31,6 +32,7 @@ public class Parameters {
 	private boolean isHelp;
 	private boolean validParams;
 	private int overlap = 0;
+	private int nDScale = 1;
 
 	// compression parameters
 	private boolean adaptivePartition = true;
@@ -147,6 +149,9 @@ public class Parameters {
 			break;
 		case "skipifexist":
 			skipIfExist = Boolean.parseBoolean(argValue);
+			break;
+		case "ndscale":
+			nDScale = Integer.parseInt(argValue);
 			break;
 		default:
 			break;
@@ -341,6 +346,8 @@ public class Parameters {
 		builder.append(validParams);
 		builder.append(" \n   overlap = ");
 		builder.append(overlap);
+		builder.append(" \n   nDScale = ");
+		builder.append(nDScale);
 		builder.append(" \n   adaptivePartition = ");
 		builder.append(adaptivePartition);
 		builder.append(" \n   dStep = ");
@@ -371,6 +378,8 @@ public class Parameters {
 		builder.append(maxIteration);
 		builder.append(" \n   samplingRate = ");
 		builder.append(samplingRate);
+		builder.append(" \n   inArgs = ");
+		builder.append(Arrays.toString(inArgs));
 		builder.append("  ]");
 		return builder.toString();
 	}
@@ -441,5 +450,9 @@ public class Parameters {
 
 	public String[] getInArgs() {
 		return inArgs;
+	}
+
+	public int getNDScale() {
+		return nDScale;
 	}
 }

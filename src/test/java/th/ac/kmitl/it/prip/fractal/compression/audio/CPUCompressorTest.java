@@ -97,7 +97,7 @@ public class CPUCompressorTest {
 			// assertEquals(this.expected[i][1], actualData[i][1], 1e-3);
 
 			// assert domain location maybe different from gpu compression
-			for (int j = 2; j < actualData[i].length; j++) {
+			for (int j = 2; j < actualData[i].length - 1; j++) {
 				sumAbsError3 += Math.abs(this.expected[i][j] - actualData[i][j]);
 				// System.out.println("error " + (this.expected[i][j] -
 				// actualData[i][j]));
