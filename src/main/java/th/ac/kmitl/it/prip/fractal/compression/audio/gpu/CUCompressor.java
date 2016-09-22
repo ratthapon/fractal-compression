@@ -48,7 +48,7 @@ public class CUCompressor extends Compressor {
 	private static CUfunction limitCoeffKernel;
 	private static CUfunction sumSquareErrorKernel;
 
-	public CUCompressor(float[] inputAudioData, Parameters compressParameters) {
+	public CUCompressor(float[] inputAudioData, Parameters compressParameters) throws IllegalStateException {
 		super(inputAudioData, compressParameters);
 
 		// Initialize the driver and create a context for the first device.
@@ -68,7 +68,7 @@ public class CUCompressor extends Compressor {
 	}
 
 	@Override
-	public double[][] process() {
+	public double[][] process() throws IllegalStateException {
 		double[][] code;
 		try {
 			// reset device to free allocate memory
@@ -378,7 +378,7 @@ public class CUCompressor extends Compressor {
 		return code; // code of each file
 	}
 
-	private void initCudaDevice() {
+	private void initCudaDevice() throws IllegalStateException {
 		// Initialize the driver and create a context for the first device.
 		try {
 			JCuda.setExceptionsEnabled(true);
@@ -393,7 +393,7 @@ public class CUCompressor extends Compressor {
 		}
 	}
 
-	private void loadCUKernelFunctions() {
+	private void loadCUKernelFunctions() throws IllegalStateException {
 		// Obtain a function pointer to the kernel function.
 		try {
 			reverseVec = new CUfunction();
@@ -413,7 +413,7 @@ public class CUCompressor extends Compressor {
 		}
 	}
 
-	private void loadPTXModules() {
+	private void loadPTXModules() throws IllegalStateException {
 		// Load the ptx file.
 		try {
 			reverseVecModule = new CUmodule();
@@ -434,7 +434,7 @@ public class CUCompressor extends Compressor {
 	}
 
 	private double[] composeCode(int minSSEIdx, double[][] code, float[] codeBuffer, final int nCoeff, final int rbs,
-			int nBatch, float[] sse) {
+			int nBatch, float[] sse) throws IllegalStateException {
 		double[] codeChunk = new double[nCoeff + +3];
 		for (int i = 0; i < nCoeff; i++) {
 			codeChunk[i] = codeBuffer[i];
@@ -455,7 +455,7 @@ public class CUCompressor extends Compressor {
 	}
 
 	private void batchCudaArraysPointerAlloc(int maxNBatch, Pointer dDAP, Pointer dRAP, Pointer dAAP, Pointer dBAP,
-			Pointer dIAAP, Pointer dCAP, Pointer dEAP, Pointer dSSEAP) {
+			Pointer dIAAP, Pointer dCAP, Pointer dEAP, Pointer dSSEAP) throws IllegalStateException {
 		try {
 			cudaMalloc(dDAP, maxNBatch * Sizeof.POINTER);
 			cudaMalloc(dRAP, maxNBatch * Sizeof.POINTER);
@@ -473,7 +473,7 @@ public class CUCompressor extends Compressor {
 
 	private void batchCudaArraysAlloc(final int nCoeff, int maxRBS, int maxNBatch, Pointer dDArrays, Pointer dRArrays,
 			Pointer dAArrays, Pointer dBArrays, Pointer dIAArrays, Pointer dCArrays, Pointer dEArrays,
-			Pointer dSSEArrays) {
+			Pointer dSSEArrays) throws IllegalStateException {
 		try {
 			cudaMalloc(dDArrays, maxNBatch * Sizeof.FLOAT * maxRBS * nCoeff);
 			cudaMalloc(dRArrays, maxNBatch * Sizeof.FLOAT * maxRBS);
@@ -489,7 +489,7 @@ public class CUCompressor extends Compressor {
 		}
 	}
 
-	private void batchCudaMemFree(Pointer... cuPointers) {
+	private void batchCudaMemFree(Pointer... cuPointers) throws IllegalStateException {
 		try {
 			// iterate over pointers list
 			for (int i = 0; i < cuPointers.length; i++) {
