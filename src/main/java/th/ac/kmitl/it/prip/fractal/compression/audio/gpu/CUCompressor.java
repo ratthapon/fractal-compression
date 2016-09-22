@@ -50,6 +50,17 @@ public class CUCompressor extends Compressor {
 
 	public CUCompressor(float[] inputAudioData, Parameters compressParameters) {
 		super(inputAudioData, compressParameters);
+
+		// Initialize the driver and create a context for the first device.
+		initCudaDevice();
+
+		// Load the ptx file.
+		loadPTXModules();
+
+		// Obtain a function pointer to the kernel function.
+		loadCUKernelFunctions();
+
+		// set compressor's input data
 		data = new float[inputAudioData.length];
 		for (int i = 0; i < inputAudioData.length; i++) {
 			data[i] = inputAudioData[i];
@@ -67,15 +78,6 @@ public class CUCompressor extends Compressor {
 				LOGGER.log(Level.SEVERE, "cuBlass Error : Can not reset cuda device.");
 				throw new IllegalStateException(e);
 			}
-
-			// Initialize the driver and create a context for the first device.
-			initCudaDevice();
-
-			// Load the ptx file.
-			loadPTXModules();
-
-			// Obtain a function pointer to the kernel function.
-			loadCUKernelFunctions();
 
 			final int h2d = cudaMemcpyHostToDevice;
 			final int nDScale = parameters.getNDScale();
