@@ -170,33 +170,39 @@ public class CUCompressor extends Compressor {
 			batchCudaArraysPointerAlloc(maxNBatch, dDAP, dRAP, dAAP, dBAP, dIAAP, dCAP, dEAP, dSSEAP);
 			allocateTime = System.nanoTime() - allocateTimeTick;
 
+			// range block size
+			final int rbs = (int) (parameters.getMaxBlockSize());
+			int prevRBS = 0; // speed trick, skip redundancy computation
+
+			// set domain location
+			int dbStartIdx = 0;
+			int dbStopIdx = nSamples - rbs * parameters.getDomainScale() - 1;
+
+			int nBatch = ((dbStopIdx - dbStartIdx + 1) / parameters.getDStep()) * 2;
+
+			// pre setting domain pool
+			launchDomainPoolContruct(nBatch, rbs, prevRBS, nCoeff, nDScale, blockSizeX, gridSizeX, dDArrays, dAArrays,
+					dIAArrays, dInfoArray, dDAP, dAAP, dIAAP);
+
 			// each range block
 			int rbIdx = 0;
-			int prevRBS = 0; // speed trick, skip redundancy computation
 			for (int fIdx = 0; fIdx < nParts; fIdx++) {
 				// locate range block
 				final int bColStart = rbIdx;
-				final int rbs = (int) (parts[fIdx]); // range block size
 				rbIdx = rbIdx + (int) parts[fIdx]; // cumulative for next range
-
-				// set domain location
-				int dbStartIdx = 0;
-				int dbStopIdx = nSamples - rbs * parameters.getDomainScale() - 1;
-
-				int nBatch = ((dbStopIdx - dbStartIdx + 1) / parameters.getDStep()) * 2;
 
 				try {
 					cudaMemcpy(dR, deviceData.withByteOffset(Sizeof.FLOAT * bColStart), Sizeof.FLOAT * rbs,
 							cudaMemcpyDeviceToDevice);
 
 					// set pool kernel parameters
-					setPoolKernelParams(nBatch, rbs, nDScale, dR, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays,
+					setSubPoolKernelParams(nBatch, rbs, nDScale, dR, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays,
 							dCArrays, dEArrays, dSSEArrays, dDAP, dRAP, dAAP, dBAP, dIAAP, dCAP, dEAP, dSSEAP);
 
 					// Call the kernel function.
 					blockSizeX = 1024;
 					gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
-					launchPoolKernel(blockSizeX, gridSizeX);
+					launchSubPoolKernel(blockSizeX, gridSizeX);
 
 					limitCoeffKernelParam = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
 							Pointer.to(new float[] { parameters.getCoeffLimit() }), Pointer.to(dDArrays),
@@ -214,31 +220,6 @@ public class CUCompressor extends Compressor {
 				// GPU batch operation
 				JCuda.cudaStreamSynchronize(stream);
 				batcTimeTick = System.nanoTime();
-
-				if (prevRBS != rbs) { // skip redundancy computation
-					try {
-						// compute X'X
-						JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, nCoeff, nCoeff, rbs,
-								Pointer.to(new float[] { 1.0f }), dDAP, rbs, dDAP, rbs,
-								Pointer.to(new float[] { 1.0f }), dAAP, nCoeff, nBatch);
-						JCuda.cudaStreamSynchronize(stream);
-					} catch (Exception e) {
-						LOGGER.log(Level.WARNING,
-								"cuBlass Error : Can not perform covariance matrix (X'X) computation.");
-						throw new IllegalStateException(e);
-					}
-
-					try {
-						// compute pseudo inverse X'X
-						JCublas2.cublasSmatinvBatched(cublasHandle, nCoeff, dAAP, nCoeff, dIAAP, nCoeff, dInfoArray,
-								nBatch);
-						JCuda.cudaStreamSynchronize(stream);
-					} catch (Exception e) {
-						LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform inverse(X'X) computation.");
-						throw new IllegalStateException(e);
-					}
-
-				}
 
 				try {
 					// compute X'Y
@@ -344,24 +325,10 @@ public class CUCompressor extends Compressor {
 		return code; // code of each file
 	}
 
-	private void launchPoolKernel(int blockSizeX, int gridSizeX) {
-		JCudaDriver.cuLaunchKernel(setDomainPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-				setDomainPoolKernelParams, null);
-		cuCtxSynchronize();
-
-		JCudaDriver.cuLaunchKernel(setRangePoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-				setRangePoolKernelParams, null);
-		cuCtxSynchronize();
-
-		JCudaDriver.cuLaunchKernel(setCoeffPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-				setCoeffPoolKernelParams, null);
-		cuCtxSynchronize();
-	}
-
-	private void setPoolKernelParams(int nBatch, final int rbs, final int nDScale, Pointer dR, Pointer dDArrays,
-			Pointer dRArrays, Pointer dAArrays, Pointer dBArrays, Pointer dIAArrays, Pointer dCArrays, Pointer dEArrays,
-			Pointer dSSEArrays, Pointer dDAP, Pointer dRAP, Pointer dAAP, Pointer dBAP, Pointer dIAAP, Pointer dCAP,
-			Pointer dEAP, Pointer dSSEAP) {
+	private void launchDomainPoolContruct(int nBatch, final int rbs, int prevRBS, final int nCoeff, final int nDScale,
+			int blockSizeX, int gridSizeX, Pointer dDArrays, Pointer dAArrays, Pointer dIAArrays, Pointer dInfoArray,
+			Pointer dDAP, Pointer dAAP, Pointer dIAAP) {
+		// launch domain pool setting
 		setDomainPoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
 				Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nDScale }),
 				Pointer.to(new int[] { parameters.getDomainScale() }),
@@ -371,6 +338,48 @@ public class CUCompressor extends Compressor {
 				Pointer.to(dDArrays), Pointer.to(dAArrays), Pointer.to(dIAArrays),
 				// pointer to arrays pointer
 				Pointer.to(dDAP), Pointer.to(dAAP), Pointer.to(dIAAP));
+
+		JCudaDriver.cuLaunchKernel(setDomainPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+				setDomainPoolKernelParams, null);
+		cuCtxSynchronize();
+
+		if (prevRBS != rbs) { // skip redundancy computation
+			try {
+				// compute X'X
+				JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, nCoeff, nCoeff, rbs,
+						Pointer.to(new float[] { 1.0f }), dDAP, rbs, dDAP, rbs, Pointer.to(new float[] { 1.0f }), dAAP,
+						nCoeff, nBatch);
+				JCuda.cudaStreamSynchronize(stream);
+			} catch (Exception e) {
+				LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform covariance matrix (X'X) computation.");
+				throw new IllegalStateException(e);
+			}
+
+			try {
+				// compute pseudo inverse X'X
+				JCublas2.cublasSmatinvBatched(cublasHandle, nCoeff, dAAP, nCoeff, dIAAP, nCoeff, dInfoArray, nBatch);
+				JCuda.cudaStreamSynchronize(stream);
+			} catch (Exception e) {
+				LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform inverse(X'X) computation.");
+				throw new IllegalStateException(e);
+			}
+		}
+	}
+
+	private void launchSubPoolKernel(int blockSizeX, int gridSizeX) {
+		JCudaDriver.cuLaunchKernel(setRangePoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+				setRangePoolKernelParams, null);
+		cuCtxSynchronize();
+
+		JCudaDriver.cuLaunchKernel(setCoeffPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+				setCoeffPoolKernelParams, null);
+		cuCtxSynchronize();
+	}
+
+	private void setSubPoolKernelParams(int nBatch, final int rbs, final int nDScale, Pointer dR, Pointer dDArrays,
+			Pointer dRArrays, Pointer dAArrays, Pointer dBArrays, Pointer dIAArrays, Pointer dCArrays, Pointer dEArrays,
+			Pointer dSSEArrays, Pointer dDAP, Pointer dRAP, Pointer dAAP, Pointer dBAP, Pointer dIAAP, Pointer dCAP,
+			Pointer dEAP, Pointer dSSEAP) {
 
 		setRangePoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
 				Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nDScale }), Pointer.to(dR),
