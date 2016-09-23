@@ -189,50 +189,14 @@ public class CUCompressor extends Compressor {
 					cudaMemcpy(dR, deviceData.withByteOffset(Sizeof.FLOAT * bColStart), Sizeof.FLOAT * rbs,
 							cudaMemcpyDeviceToDevice);
 
-					setDomainPoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }),
-							Pointer.to(new int[] { rbs }), Pointer.to(new int[] { parameters.getNCoeff() }),
-							Pointer.to(new int[] { nDScale }), Pointer.to(new int[] { parameters.getDomainScale() }),
-							Pointer.to(new float[] { parameters.getRegularize() }), Pointer.to(deviceData),
-							Pointer.to(deviceDataRev),
-							// pointer to arrays data
-							Pointer.to(dDArrays), Pointer.to(dAArrays), Pointer.to(dIAArrays),
-							// pointer to arrays pointer
-							Pointer.to(dDAP), Pointer.to(dAAP), Pointer.to(dIAAP));
-
-					setRangePoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }),
-							Pointer.to(new int[] { rbs }), Pointer.to(new int[] { parameters.getNCoeff() }),
-							Pointer.to(new int[] { nDScale }), Pointer.to(dR),
-							// pointer to arrays data
-							Pointer.to(dRArrays), Pointer.to(dBArrays), Pointer.to(dEArrays),
-							// pointer to arrays pointer
-							Pointer.to(dRAP), Pointer.to(dBAP), Pointer.to(dEAP));
-
-					setCoeffPoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }),
-							Pointer.to(new int[] { rbs }), Pointer.to(new int[] { parameters.getNCoeff() }),
-							Pointer.to(new int[] { nDScale }),
-							// pointer to arrays data
-							Pointer.to(dCArrays), Pointer.to(dSSEArrays),
-							// pointer to arrays pointer
-							Pointer.to(dCAP), Pointer.to(dSSEAP));
+					// set pool kernel parameters
+					setPoolKernelParams(nBatch, rbs, nDScale, dR, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays,
+							dCArrays, dEArrays, dSSEArrays, dDAP, dRAP, dAAP, dBAP, dIAAP, dCAP, dEAP, dSSEAP);
 
 					// Call the kernel function.
 					blockSizeX = 1024;
 					gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
-					// JCudaDriver.cuLaunchKernel(memSetKernel, gridSizeX, 1, 1,
-					// blockSizeX, 1, 1, 0, null,
-					// memSetKernelParams, null);
-					// cuCtxSynchronize();
-					JCudaDriver.cuLaunchKernel(setDomainPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-							setDomainPoolKernelParams, null);
-					cuCtxSynchronize();
-
-					JCudaDriver.cuLaunchKernel(setRangePoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-							setRangePoolKernelParams, null);
-					cuCtxSynchronize();
-
-					JCudaDriver.cuLaunchKernel(setCoeffPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-							setCoeffPoolKernelParams, null);
-					cuCtxSynchronize();
+					launchPoolKernel(blockSizeX, gridSizeX);
 
 					limitCoeffKernelParam = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
 							Pointer.to(new float[] { parameters.getCoeffLimit() }), Pointer.to(dDArrays),
@@ -378,6 +342,49 @@ public class CUCompressor extends Compressor {
 			throw new IllegalStateException(e);
 		}
 		return code; // code of each file
+	}
+
+	private void launchPoolKernel(int blockSizeX, int gridSizeX) {
+		JCudaDriver.cuLaunchKernel(setDomainPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+				setDomainPoolKernelParams, null);
+		cuCtxSynchronize();
+
+		JCudaDriver.cuLaunchKernel(setRangePoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+				setRangePoolKernelParams, null);
+		cuCtxSynchronize();
+
+		JCudaDriver.cuLaunchKernel(setCoeffPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+				setCoeffPoolKernelParams, null);
+		cuCtxSynchronize();
+	}
+
+	private void setPoolKernelParams(int nBatch, final int rbs, final int nDScale, Pointer dR, Pointer dDArrays,
+			Pointer dRArrays, Pointer dAArrays, Pointer dBArrays, Pointer dIAArrays, Pointer dCArrays, Pointer dEArrays,
+			Pointer dSSEArrays, Pointer dDAP, Pointer dRAP, Pointer dAAP, Pointer dBAP, Pointer dIAAP, Pointer dCAP,
+			Pointer dEAP, Pointer dSSEAP) {
+		setDomainPoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
+				Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nDScale }),
+				Pointer.to(new int[] { parameters.getDomainScale() }),
+				Pointer.to(new float[] { parameters.getRegularize() }), Pointer.to(deviceData),
+				Pointer.to(deviceDataRev),
+				// pointer to arrays data
+				Pointer.to(dDArrays), Pointer.to(dAArrays), Pointer.to(dIAArrays),
+				// pointer to arrays pointer
+				Pointer.to(dDAP), Pointer.to(dAAP), Pointer.to(dIAAP));
+
+		setRangePoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
+				Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nDScale }), Pointer.to(dR),
+				// pointer to arrays data
+				Pointer.to(dRArrays), Pointer.to(dBArrays), Pointer.to(dEArrays),
+				// pointer to arrays pointer
+				Pointer.to(dRAP), Pointer.to(dBAP), Pointer.to(dEAP));
+
+		setCoeffPoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
+				Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nDScale }),
+				// pointer to arrays data
+				Pointer.to(dCArrays), Pointer.to(dSSEArrays),
+				// pointer to arrays pointer
+				Pointer.to(dCAP), Pointer.to(dSSEAP));
 	}
 
 	private void setDeviceAudioData(final int h2d, int blockSizeX, int gridSizeX) {
