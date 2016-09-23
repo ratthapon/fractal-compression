@@ -181,8 +181,8 @@ public class CUCompressor extends Compressor {
 			int nBatch = ((dbStopIdx - dbStartIdx + 1) / parameters.getDStep()) * 2;
 
 			// pre setting domain pool
-			launchDomainPoolContruct(nBatch, rbs, prevRBS, nCoeff, nDScale, blockSizeX, gridSizeX, dDArrays, dAArrays,
-					dIAArrays, dInfoArray, dDAP, dAAP, dIAAP);
+			launchBatchInvGramianMatrix(nBatch, rbs, prevRBS, nCoeff, nDScale, blockSizeX, gridSizeX, dDArrays,
+					dAArrays, dIAArrays, dInfoArray, dDAP, dAAP, dIAAP);
 
 			// each range block
 			int rbIdx = 0;
@@ -190,109 +190,29 @@ public class CUCompressor extends Compressor {
 				// locate range block
 				final int bColStart = rbIdx;
 				rbIdx = rbIdx + (int) parts[fIdx]; // cumulative for next range
+				blockSizeX = 1024;
+				gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
 
-				try {
-					cudaMemcpy(dR, deviceData.withByteOffset(Sizeof.FLOAT * bColStart), Sizeof.FLOAT * rbs,
-							cudaMemcpyDeviceToDevice);
-
-					// set pool kernel parameters
-					setSubPoolKernelParams(nBatch, rbs, nDScale, dR, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays,
-							dCArrays, dEArrays, dSSEArrays, dDAP, dRAP, dAAP, dBAP, dIAAP, dCAP, dEAP, dSSEAP);
-
-					// Call the kernel function.
-					blockSizeX = 1024;
-					gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
-					launchSubPoolKernel(blockSizeX, gridSizeX);
-
-					limitCoeffKernelParam = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
-							Pointer.to(new float[] { parameters.getCoeffLimit() }), Pointer.to(dDArrays),
-							Pointer.to(dRArrays), Pointer.to(dCArrays));
-
-					sumSquareErrorKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }),
-							Pointer.to(new int[] { rbs }), Pointer.to(new int[] { nCoeff }),
-							Pointer.to(new float[] { parameters.getCoeffLimit() }), Pointer.to(dDArrays),
-							Pointer.to(dCArrays), Pointer.to(dEArrays), Pointer.to(dSSEArrays));
-				} catch (Exception e) {
-					LOGGER.log(Level.SEVERE, "cuBlass Error : Can not setup range blocks memory.");
-					throw new IllegalStateException(e);
-				}
+				setBatchPool(nDScale, blockSizeX, gridSizeX, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays,
+						dCArrays, dEArrays, dSSEArrays, dR, dDAP, dRAP, dAAP, dBAP, dIAAP, dCAP, dEAP, dSSEAP, rbs,
+						nBatch, bColStart);
 
 				// GPU batch operation
 				JCuda.cudaStreamSynchronize(stream);
 				batcTimeTick = System.nanoTime();
 
-				try {
-					// compute X'Y
-					JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, nCoeff, 1, rbs,
-							Pointer.to(new float[] { 1.0f }), dDAP, rbs, dRAP, rbs, Pointer.to(new float[] { 0.0f }),
-							dBAP, nCoeff, nBatch);
-					JCuda.cudaStreamSynchronize(stream);
-				} catch (Exception e) {
-					LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform (X'Y) computation.");
-					throw new IllegalStateException(e);
-				}
+				launchBatchMomentMatrix(nCoeff, dDAP, dRAP, dBAP, rbs, nBatch);
 
-				try {
-					// compute pinv(X'X)*(X'Y)
-					JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, nCoeff, 1, nCoeff,
-							Pointer.to(new float[] { 1.0f }), dIAAP, nCoeff, dBAP, nCoeff,
-							Pointer.to(new float[] { 0.0f }), dCAP, nCoeff, nBatch);
-					JCuda.cudaStreamSynchronize(stream);
-				} catch (Exception e) {
-					LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform pinv(X'X)*(X'Y) computation.");
-					throw new IllegalStateException(e);
-				}
+				launchBatchLeastSquare(nCoeff, dBAP, dIAAP, dCAP, nBatch);
 
-				try {
-					// limit coeff
-					// Call the kernel function.
-					if (nCoeff == 2) {
-						JCudaDriver.cuLaunchKernel(limitCoeffKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-								limitCoeffKernelParam, null);
-						cuCtxSynchronize();
-						JCuda.cudaStreamSynchronize(stream);
-					}
-				} catch (Exception e) {
-					LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform limit coeff kernel.");
-					throw new IllegalStateException(e);
-				}
+				launchBatchLimitCoeff(nCoeff, blockSizeX, gridSizeX, dDArrays, dRArrays, dCArrays, rbs, nBatch);
 
-				try {
-					// compute SumSquareErr = sum(E.^2)
-					JCudaDriver.cuLaunchKernel(sumSquareErrorKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-							sumSquareErrorKernelParams, null);
-					cuCtxSynchronize();
-					JCuda.cudaStreamSynchronize(stream);
-				} catch (Exception e) {
-					LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform sum square error computation.");
-					throw new IllegalStateException(e);
-				}
-
-				int minSSEIdx = -1;
-				float[] sse = new float[] { Float.POSITIVE_INFINITY };
-				try {
-					// find min sum square error idx
-					minSSEIdx = JCublas.cublasIsamin(nBatch, dSSEArrays, 1);
-					cudaMemcpy(Pointer.to(sse), dSSEArrays.withByteOffset(Sizeof.FLOAT * (minSSEIdx - 1)), Sizeof.FLOAT,
-							cudaMemcpyDeviceToHost);
-				} catch (Exception e) {
-					LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform find minimum sum square error index.");
-					throw new IllegalStateException(e);
-				}
+				launchBatchComputeSSE(nCoeff, blockSizeX, gridSizeX, dDArrays, dCArrays, dEArrays, dSSEArrays, rbs,
+						nBatch);
 
 				batcTime = batcTime + (System.nanoTime() - batcTimeTick);
 
-				float[] codeBuffer = new float[nCoeff];
-				try {
-					cudaMemcpy(Pointer.to(codeBuffer), dCArrays.withByteOffset(Sizeof.FLOAT * nCoeff * (minSSEIdx - 1)),
-							Sizeof.FLOAT * nCoeff, cudaMemcpyDeviceToHost);
-				} catch (Exception e) {
-					LOGGER.log(Level.WARNING, "cuBlass Error : Can not gather coefficients result.");
-					throw new IllegalStateException(e);
-				}
-
-				// store minimum value of self similarity
-				code[fIdx] = composeCode(minSSEIdx, code, codeBuffer, nCoeff, rbs, nBatch, sse);
+				getMinErrorCode(code, nCoeff, dCArrays, dSSEArrays, rbs, nBatch, fIdx);
 
 				JCuda.cudaStreamSynchronize(stream);
 
@@ -325,9 +245,123 @@ public class CUCompressor extends Compressor {
 		return code; // code of each file
 	}
 
-	private void launchDomainPoolContruct(int nBatch, final int rbs, int prevRBS, final int nCoeff, final int nDScale,
-			int blockSizeX, int gridSizeX, Pointer dDArrays, Pointer dAArrays, Pointer dIAArrays, Pointer dInfoArray,
-			Pointer dDAP, Pointer dAAP, Pointer dIAAP) {
+	private void getMinErrorCode(double[][] code, final int nCoeff, Pointer dCArrays, Pointer dSSEArrays, final int rbs,
+			int nBatch, int fIdx) {
+		int minSSEIdx = -1;
+		float[] sse = new float[] { Float.POSITIVE_INFINITY };
+		try {
+			// find min sum square error idx
+			minSSEIdx = JCublas.cublasIsamin(nBatch, dSSEArrays, 1);
+			cudaMemcpy(Pointer.to(sse), dSSEArrays.withByteOffset(Sizeof.FLOAT * (minSSEIdx - 1)), Sizeof.FLOAT,
+					cudaMemcpyDeviceToHost);
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform find minimum sum square error index.");
+			throw new IllegalStateException(e);
+		}
+
+		float[] codeBuffer = new float[nCoeff];
+		try {
+			cudaMemcpy(Pointer.to(codeBuffer), dCArrays.withByteOffset(Sizeof.FLOAT * nCoeff * (minSSEIdx - 1)),
+					Sizeof.FLOAT * nCoeff, cudaMemcpyDeviceToHost);
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING, "cuBlass Error : Can not gather coefficients result.");
+			throw new IllegalStateException(e);
+		}
+
+		// store minimum value of self similarity
+		code[fIdx] = composeCode(minSSEIdx, code, codeBuffer, nCoeff, rbs, nBatch, sse);
+	}
+
+	private void launchBatchComputeSSE(final int nCoeff, int blockSizeX, int gridSizeX, Pointer dDArrays,
+			Pointer dCArrays, Pointer dEArrays, Pointer dSSEArrays, final int rbs, int nBatch) {
+		try {
+			// compute SumSquareErr = sum(E.^2)
+			sumSquareErrorKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
+					Pointer.to(new int[] { nCoeff }), Pointer.to(new float[] { parameters.getCoeffLimit() }),
+					Pointer.to(dDArrays), Pointer.to(dCArrays), Pointer.to(dEArrays), Pointer.to(dSSEArrays));
+
+			JCudaDriver.cuLaunchKernel(sumSquareErrorKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+					sumSquareErrorKernelParams, null);
+			cuCtxSynchronize();
+			JCuda.cudaStreamSynchronize(stream);
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform sum square error computation.");
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private void launchBatchLimitCoeff(final int nCoeff, int blockSizeX, int gridSizeX, Pointer dDArrays,
+			Pointer dRArrays, Pointer dCArrays, final int rbs, int nBatch) {
+		try {
+			// limit coeff
+			if (nCoeff == 2) {
+				limitCoeffKernelParam = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
+						Pointer.to(new float[] { parameters.getCoeffLimit() }), Pointer.to(dDArrays),
+						Pointer.to(dRArrays), Pointer.to(dCArrays));
+
+				// Call the kernel function.
+				JCudaDriver.cuLaunchKernel(limitCoeffKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+						limitCoeffKernelParam, null);
+				cuCtxSynchronize();
+				JCuda.cudaStreamSynchronize(stream);
+			}
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform limit coeff kernel.");
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private void launchBatchLeastSquare(final int nCoeff, Pointer dBAP, Pointer dIAAP, Pointer dCAP, int nBatch) {
+		try {
+			// compute pinv(X'X)*(X'Y)
+			JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_N, CUBLAS_OP_N, nCoeff, 1, nCoeff,
+					Pointer.to(new float[] { 1.0f }), dIAAP, nCoeff, dBAP, nCoeff, Pointer.to(new float[] { 0.0f }),
+					dCAP, nCoeff, nBatch);
+			JCuda.cudaStreamSynchronize(stream);
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform pinv(X'X)*(X'Y) computation.");
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private void launchBatchMomentMatrix(final int nCoeff, Pointer dDAP, Pointer dRAP, Pointer dBAP, final int rbs,
+			int nBatch) {
+		try {
+			// compute X'Y
+			JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, nCoeff, 1, rbs,
+					Pointer.to(new float[] { 1.0f }), dDAP, rbs, dRAP, rbs, Pointer.to(new float[] { 0.0f }), dBAP,
+					nCoeff, nBatch);
+			JCuda.cudaStreamSynchronize(stream);
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform (X'Y) computation.");
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private void setBatchPool(final int nDScale, int blockSizeX, int gridSizeX, Pointer dDArrays, Pointer dRArrays,
+			Pointer dAArrays, Pointer dBArrays, Pointer dIAArrays, Pointer dCArrays, Pointer dEArrays,
+			Pointer dSSEArrays, Pointer dR, Pointer dDAP, Pointer dRAP, Pointer dAAP, Pointer dBAP, Pointer dIAAP,
+			Pointer dCAP, Pointer dEAP, Pointer dSSEAP, final int rbs, int nBatch, final int bColStart) {
+		try {
+			cudaMemcpy(dR, deviceData.withByteOffset(Sizeof.FLOAT * bColStart), Sizeof.FLOAT * rbs,
+					cudaMemcpyDeviceToDevice);
+
+			// set pool kernel parameters
+			setSubPoolKernelParams(nBatch, rbs, nDScale, dR, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays,
+					dCArrays, dEArrays, dSSEArrays, dDAP, dRAP, dAAP, dBAP, dIAAP, dCAP, dEAP, dSSEAP);
+
+			// Call the kernel function.
+			launchSubPoolKernel(blockSizeX, gridSizeX);
+
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "cuBlass Error : Can not setup range blocks memory.");
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private void launchBatchInvGramianMatrix(int nBatch, final int rbs, int prevRBS, final int nCoeff,
+			final int nDScale, int blockSizeX, int gridSizeX, Pointer dDArrays, Pointer dAArrays, Pointer dIAArrays,
+			Pointer dInfoArray, Pointer dDAP, Pointer dAAP, Pointer dIAAP) {
 		// launch domain pool setting
 		setDomainPoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
 				Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nDScale }),
