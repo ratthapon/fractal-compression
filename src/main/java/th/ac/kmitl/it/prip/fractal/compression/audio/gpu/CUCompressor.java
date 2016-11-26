@@ -179,6 +179,7 @@ public class CUCompressor extends Compressor {
 			int dbStopIdx = nSamples - rbs * parameters.getDomainScale() - 1;
 
 			int nBatch = ((dbStopIdx - dbStartIdx + 1) / parameters.getDStep()) * 2;
+			gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
 
 			// pre setting domain pool
 			launchBatchInvGramianMatrix(nBatch, rbs, prevRBS, nCoeff, nDScale, blockSizeX, gridSizeX, dDArrays,
