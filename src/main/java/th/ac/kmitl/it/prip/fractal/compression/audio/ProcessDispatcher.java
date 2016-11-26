@@ -69,7 +69,7 @@ public class ProcessDispatcher {
 		ExecutorService executorService = Executors.newFixedThreadPool(1);
 		List<Callable<double[][]>> compressorQueue = new ArrayList<Callable<double[][]>>();
 
-		for (int i = 0; i < dataSetManager.getSize(); i++) {
+		for (int i = parameters.getFromIdx(); i < parameters.getToIdx() && i < dataSetManager.getSize(); i++) {
 			final int idsIdx = i;
 			if (dataSetManager.existOutput(idsIdx) && parameters.isSkipIfExist()) {
 				String log = "Skiped " + idsIdx + " " + dataSetManager.getName(idsIdx);
