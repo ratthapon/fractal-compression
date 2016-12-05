@@ -295,7 +295,7 @@ public class CUCompressor extends Compressor {
 			Pointer dRArrays, Pointer dCArrays, final int rbs, int nBatch) {
 		try {
 			// limit coeff
-			if (nCoeff == 2) {
+			if (nCoeff == 2 && parameters.getCoeffLimit() > 0) {
 				limitCoeffKernelParam = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
 						Pointer.to(new float[] { parameters.getCoeffLimit() }), Pointer.to(dDArrays),
 						Pointer.to(dRArrays), Pointer.to(dCArrays));
