@@ -62,7 +62,8 @@ public class Compressor implements ProcessorAPIv1 {
 			return true;
 		}
 		// check if chunk size under min block size
-		if (to - from + 1 < parameters.getMinBlockSize() * parameters.getDomainScale()) {
+		if ((to - from + 1 < parameters.getMinBlockSize() * parameters.getDomainScale())
+				|| (to - from + 1 <= parameters.getMinBlockSize() && parameters.getDomainScale() <= 1)) {
 			return false;
 		}
 		// find mean
@@ -299,8 +300,8 @@ public class Compressor implements ProcessorAPIv1 {
 		return coeff;
 	}
 
-	private float[] composeCode(final int nCoeff, final float sumSquareError, final int rangeBlockSize, int dbIdx, int rev,
-			float[] coeff) {
+	private float[] composeCode(final int nCoeff, final float sumSquareError, final int rangeBlockSize, int dbIdx,
+			int rev, float[] coeff) {
 		float[] codeChunk = new float[nCoeff + 3];
 		// store minimum value of self similarity
 		for (int i = 0; i < nCoeff; i++) {
@@ -343,7 +344,7 @@ public class Compressor implements ProcessorAPIv1 {
 		if (rev == 1) {
 			d = reverseBlock(d, 1);
 			return d;
-		} else{
+		} else {
 			return d;
 		}
 	}
