@@ -97,14 +97,14 @@ __global__ void setDomainPoolKernel(
       }
 
       // calculate next degree
-      for(int deg = 2; deg <= nDegree-1; deg++){
-        int degPad = padDA * nD * (deg - 2);
-        int nextDegPad = padDA * nD * (deg - 1);
-        for(int i = 0; i < rbs * nD; i++){
+      for(int deg = 2; deg <= nDegree - 1; deg++){
+        int degPad = rbs * nD * (deg - 2) + rbs * dn;
+        int nextDegPad = rbs * nD * (deg - 1) + rbs * dn;
+        for(int i = 0; i < rbs; i++){
           // power n>=2
           // D^n = D^1 * D^(n-1)
-          DA[daOffset + nextDegPad + rbs + i] =
-          DA[daOffset + rbs + i] * DA[daOffset + degPad + rbs + i] ;
+          DA[daOffset + nextDegPad + i] =
+          DA[daOffset + rbs*dn + i] * DA[daOffset + degPad + i] ;
         }
       }
     }
