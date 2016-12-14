@@ -103,8 +103,8 @@ public class CUCompressor extends Compressor {
 			}
 
 			final int h2d = cudaMemcpyHostToDevice;
-			final int nDScale = parameters.getNDScale();
-			final int nCoeff = ((parameters.getNCoeff() - 1) * nDScale + 1);
+			final int nD = parameters.getND();
+			final int nCoeff = ((parameters.getNCoeff() - 1) * nD + 1);
 			code = new double[nParts][nCoeff + 3];
 			if (nCoeff <= 1) {
 				String logMsg = "Invalid n coefficients. It should greater than 1.";
@@ -182,7 +182,7 @@ public class CUCompressor extends Compressor {
 			gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
 
 			// pre setting domain pool
-			launchBatchInvGramianMatrix(nBatch, rbs, prevRBS, nCoeff, nDScale, blockSizeX, gridSizeX, dDArrays,
+			launchBatchInvGramianMatrix(nBatch, rbs, prevRBS, nCoeff, nD, blockSizeX, gridSizeX, dDArrays,
 					dAArrays, dIAArrays, dInfoArray, dDAP, dAAP, dIAAP);
 
 			// each range block
@@ -194,7 +194,7 @@ public class CUCompressor extends Compressor {
 				blockSizeX = 1024;
 				gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
 
-				setBatchPool(nDScale, blockSizeX, gridSizeX, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays,
+				setBatchPool(nD, blockSizeX, gridSizeX, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays,
 						dCArrays, dEArrays, dSSEArrays, dR, dDAP, dRAP, dAAP, dBAP, dIAAP, dCAP, dEAP, dSSEAP, rbs,
 						nBatch, bColStart);
 

@@ -32,7 +32,7 @@ public class Parameters {
 	private boolean isHelp;
 	private boolean validParams;
 	private int overlap = 0;
-	private int nDScale = 1;
+	private int nD = 1;
 
 	// compression parameters
 	private boolean adaptivePartition = true;
@@ -151,7 +151,7 @@ public class Parameters {
 			skipIfExist = Boolean.parseBoolean(argValue);
 			break;
 		case "ndscale":
-			nDScale = Integer.parseInt(argValue);
+			nD = Integer.parseInt(argValue);
 			break;
 		default:
 			break;
@@ -347,7 +347,7 @@ public class Parameters {
 		builder.append(" \n   overlap = ");
 		builder.append(overlap);
 		builder.append(" \n   nDScale = ");
-		builder.append(nDScale);
+		builder.append(nD);
 		builder.append(" \n   adaptivePartition = ");
 		builder.append(adaptivePartition);
 		builder.append(" \n   dStep = ");
@@ -452,7 +452,7 @@ public class Parameters {
 		return inArgs;
 	}
 
-	public int getNDScale() {
-		return nDScale;
+	public int getND() {
+		return nD;
 	}
 }
