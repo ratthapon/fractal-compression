@@ -129,7 +129,12 @@ __device__ int getDnIdx(int dIdx, int dn, int nD, int rbs, int dScale, int expan
   }
   int dnIdx = dIdx;
   if( !isCenAlign ){
+    // if left aligned
     dnIdx = dIdx + rbs * sumScale;
+  } else {
+    // if center aligned
+    int dnScale = (int) powf( (float) dScale, (float) (1 + expansion * (dn - 1)));
+    dnIdx = dIdx + rbs/2 * (1 - dnScale);
   }
   return dnIdx;
 }
