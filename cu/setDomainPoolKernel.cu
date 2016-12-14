@@ -1,6 +1,8 @@
 extern "C"
+__device__ int getDnIdx(int dIdx, int dn, int nD, int rbs, int dScale, int expansion, bool isCenAlign);
+
 __global__ void setDomainPoolKernel(
-  int nBatch,int rbs,int nDegree,int nD,int dScale, float regularize,
+  int nBatch,int rbs,int nDegree,int nD,int dScale,int expansion,bool isCenAlign, float regularize,
 
   float *data,float *dataRev, // array of data and reverse data
   // arrays pointer
@@ -55,8 +57,10 @@ __global__ void setDomainPoolKernel(
     // for each block number dn
     for(int dn = 1; dn <= nD; dn++){
       // set reference domain block
-      int dSize = rbs * dScale;
-      int dnIdx = dIdx + (dn - 1) * dSize; // * domian location factor
+
+      int dnIdx = getDnIdx(dIdx, dn, nD, rbs, dScale, expansion, isCenAlign);
+      //int dnIdx = dIdx + rbs * sumScale; // * domian location factor
+      int dnScale = (int) powf( (float) dScale, (float) (1 + expansion * (dn - 1)));
 
       int padDA = rbs*dn; // number of row of DA
 
@@ -70,30 +74,30 @@ __global__ void setDomainPoolKernel(
       for(int i = 0; i < rbs; i++){
         if(taskIdx < (nBatch/2)){
           DA[daOffset + padDA + i] =
-          DA[daOffset + padDA + i] + data[dnIdx + i*dScale];
+          DA[daOffset + padDA + i] + data[dnIdx + i*dnScale];
         }else{ // gen reverse domain
           DA[daOffset + padDA + i] =
-          DA[daOffset + padDA + i] + dataRev[dnIdx + i*dScale];
+          DA[daOffset + padDA + i] + dataRev[dnIdx + i*dnScale];
         }
       }
 
       // handling if domain blocks are larger than rbs (by downsample)
-      for(int ds = 1; ds < dScale; ds++){
+      for(int ds = 1; ds < dnScale; ds++){
         // vec sumation
         for(int i = 0; i < rbs; i++){
           if(taskIdx < (nBatch/2)){
             DA[daOffset + padDA + i] =
-            DA[daOffset  + padDA + i] + data[dnIdx + ds + i*dScale];
+            DA[daOffset  + padDA + i] + data[dnIdx + ds + i*dnScale];
           }else{ // gen reverse domain
             DA[daOffset + padDA + i] =
-            DA[daOffset  + padDA + i] + dataRev[dnIdx + ds + i*dScale];
+            DA[daOffset  + padDA + i] + dataRev[dnIdx + ds + i*dnScale];
           }
         }
       }
 
       // vec scalig after resample
       for(int i = 0; i < rbs; i++){
-        DA[daOffset + padDA + i] = DA[daOffset + padDA + i]/dScale;
+        DA[daOffset + padDA + i] = DA[daOffset + padDA + i]/dnScale;
       }
 
       // calculate next degree
@@ -109,4 +113,17 @@ __global__ void setDomainPoolKernel(
       }
     }
   }
+}
+
+__device__ int getDnIdx(int dIdx, int dn, int nD, int rbs, int dScale, int expansion, bool isCenAlign){
+  // compute sumScale
+  int sumScale = 0;
+  for(int k = 1; k <= nD && k < dn; k++){
+    sumScale += (int) powf( (float) dScale, (float) (1 + expansion * (k - 1))) ;
+  }
+  int dnIdx = dIdx;
+  if( !isCenAlign ){
+    dnIdx = dIdx + rbs * sumScale;
+  }
+  return dnIdx;
 }
