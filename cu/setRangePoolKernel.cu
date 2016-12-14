@@ -1,6 +1,6 @@
 extern "C"
 __global__ void setRangePoolKernel(
-  int nBatch,int rbs,int nDegree,int nD,
+  int nBatch,int rbs,int nDegree,int nD,int rScale,
 
   float *R, // array of range
   // arrays pointer
@@ -21,15 +21,15 @@ __global__ void setRangePoolKernel(
     int nCoeff = ((nDegree - 1) * nD + 1);
 
     // pointing section
-    RP[taskIdx] = &RA[taskIdx * rbs];
+    RP[taskIdx] = &RA[taskIdx * rbs * rScale];
     BP[taskIdx] = &BA[taskIdx * nCoeff];
     EP[taskIdx] = &EA[taskIdx * rbs];
 
     // initialize range and error arrays
-    int raOffset = (taskIdx * rbs);
-    for(int j = 0; j < rbs; j++){
-      RA[raOffset + j] = R[j];
-      EA[raOffset + j] = R[j];
+    int raOffset = (taskIdx * rbs * rScale);
+    for(int j = 0; j < rbs * rScale; j++){
+      RA[raOffset + j] = R[j / rScale];
+      EA[raOffset + j] = R[j / rScale];
     }
   }
 }
