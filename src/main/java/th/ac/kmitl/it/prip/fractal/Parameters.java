@@ -33,6 +33,9 @@ public class Parameters {
 	private boolean validParams;
 	private int overlap = 0;
 	private int nD = 1;
+	private int rangeScale = 1;
+	private boolean isCenAlign = false;
+	private int expansion = 1;
 
 	// compression parameters
 	private boolean adaptivePartition = true;
@@ -234,10 +237,23 @@ public class Parameters {
 			break;
 		case "domainscale":
 		case "aa":
+		case "dscale":
 			domainScale = Integer.parseInt(argValue);
+			break;
+		case "rangescale":
+		case "rscale":
+			rangeScale = Integer.parseInt(argValue);
 			break;
 		case "ncoeff":
 			nCoeff = Integer.parseInt(argValue);
+			break;
+		case "expansion":
+			expansion = Integer.parseInt(argValue);
+			break;
+		case "centeralign":
+		case "iscenalign":
+		case "cenalign":
+			isCenAlign = Boolean.parseBoolean(argValue);
 			break;
 		case "gpu":
 			gpuEnable = Boolean.parseBoolean(argValue);
@@ -346,8 +362,14 @@ public class Parameters {
 		builder.append(validParams);
 		builder.append(" \n   overlap = ");
 		builder.append(overlap);
-		builder.append(" \n   nDScale = ");
+		builder.append(" \n   nD = ");
 		builder.append(nD);
+		builder.append(" \n   rangeScale = ");
+		builder.append(rangeScale);
+		builder.append(" \n   isCenAlign = ");
+		builder.append(isCenAlign);
+		builder.append(" \n   expansion = ");
+		builder.append(expansion);
 		builder.append(" \n   adaptivePartition = ");
 		builder.append(adaptivePartition);
 		builder.append(" \n   dStep = ");
@@ -454,5 +476,17 @@ public class Parameters {
 
 	public int getND() {
 		return nD;
+	}
+
+	public int getRangeScale() {
+		return rangeScale;
+	}
+
+	public boolean isCenAlign() {
+		return isCenAlign;
+	}
+
+	public int getExpansion() {
+		return expansion;
 	}
 }
