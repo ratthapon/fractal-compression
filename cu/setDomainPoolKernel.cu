@@ -72,12 +72,15 @@ __global__ void setDomainPoolKernel(
       // construct DA from domain blocks at power 1
       // copy elements
       for(int i = 0; i < rbs; i++){
-        if(taskIdx < (nBatch/2)){
-          DA[daOffset + padDA + i] =
-          DA[daOffset + padDA + i] + data[dnIdx + i*dnScale];
-        }else{ // gen reverse domain
-          DA[daOffset + padDA + i] =
-          DA[daOffset + padDA + i] + dataRev[dnIdx + i*dnScale];
+        int datIdx = dnIdx + i*dnScale;
+        if(datIdx >=0 && datIdx < (nBatch/2)){
+          if(taskIdx < (nBatch/2)){
+            DA[daOffset + padDA + i] =
+            DA[daOffset + padDA + i] + data[datIdx];
+          }else{ // gen reverse domain
+            DA[daOffset + padDA + i] =
+            DA[daOffset + padDA + i] + dataRev[datIdx];
+          }
         }
       }
 
@@ -85,12 +88,15 @@ __global__ void setDomainPoolKernel(
       for(int ds = 1; ds < dnScale; ds++){
         // vec sumation
         for(int i = 0; i < rbs; i++){
-          if(taskIdx < (nBatch/2)){
-            DA[daOffset + padDA + i] =
-            DA[daOffset  + padDA + i] + data[dnIdx + ds + i*dnScale];
-          }else{ // gen reverse domain
-            DA[daOffset + padDA + i] =
-            DA[daOffset  + padDA + i] + dataRev[dnIdx + ds + i*dnScale];
+          int datIdx = dnIdx + ds + i*dnScale;
+          if(datIdx >=0 && datIdx < (nBatch/2)){
+            if(taskIdx < (nBatch/2)){
+              DA[daOffset + padDA + i] =
+              DA[daOffset  + padDA + i] + data[datIdx];
+            }else{ // gen reverse domain
+              DA[daOffset + padDA + i] =
+              DA[daOffset  + padDA + i] + dataRev[datIdx];
+            }
           }
         }
       }
