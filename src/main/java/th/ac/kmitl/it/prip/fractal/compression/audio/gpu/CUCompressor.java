@@ -182,8 +182,8 @@ public class CUCompressor extends Compressor {
 			gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
 
 			// pre setting domain pool
-			launchBatchInvGramianMatrix(nBatch, rbs, prevRBS, nCoeff, nD, blockSizeX, gridSizeX, dDArrays,
-					dAArrays, dIAArrays, dInfoArray, dDAP, dAAP, dIAAP);
+			launchBatchInvGramianMatrix(nBatch, rbs, prevRBS, nCoeff, nD, blockSizeX, gridSizeX, dDArrays, dAArrays,
+					dIAArrays, dInfoArray, dDAP, dAAP, dIAAP);
 
 			// each range block
 			int rbIdx = 0;
@@ -194,9 +194,9 @@ public class CUCompressor extends Compressor {
 				blockSizeX = 1024;
 				gridSizeX = (int) Math.ceil((double) nBatch / blockSizeX);
 
-				setBatchPool(nD, blockSizeX, gridSizeX, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays,
-						dCArrays, dEArrays, dSSEArrays, dR, dDAP, dRAP, dAAP, dBAP, dIAAP, dCAP, dEAP, dSSEAP, rbs,
-						nBatch, bColStart);
+				setBatchPool(nD, blockSizeX, gridSizeX, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays, dCArrays,
+						dEArrays, dSSEArrays, dR, dDAP, dRAP, dAAP, dBAP, dIAAP, dCAP, dEAP, dSSEAP, rbs, nBatch,
+						bColStart);
 
 				// GPU batch operation
 				JCuda.cudaStreamSynchronize(stream);
@@ -363,20 +363,31 @@ public class CUCompressor extends Compressor {
 	private void launchBatchInvGramianMatrix(int nBatch, final int rbs, int prevRBS, final int nCoeff,
 			final int nDScale, int blockSizeX, int gridSizeX, Pointer dDArrays, Pointer dAArrays, Pointer dIAArrays,
 			Pointer dInfoArray, Pointer dDAP, Pointer dAAP, Pointer dIAAP) {
+
+		int isAlign = 0;
+		if (parameters.isCenAlign() == true) {
+			isAlign = 1;
+		}
 		// launch domain pool setting
 		setDomainPoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
 				Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nDScale }),
 				Pointer.to(new int[] { parameters.getDomainScale() }),
+				Pointer.to(new int[] { parameters.getExpansion() }), Pointer.to(new int[] { isAlign }),
 				Pointer.to(new float[] { parameters.getRegularize() }), Pointer.to(deviceData),
 				Pointer.to(deviceDataRev),
 				// pointer to arrays data
 				Pointer.to(dDArrays), Pointer.to(dAArrays), Pointer.to(dIAArrays),
 				// pointer to arrays pointer
 				Pointer.to(dDAP), Pointer.to(dAAP), Pointer.to(dIAAP));
+		try {
+			JCudaDriver.cuLaunchKernel(setDomainPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+					setDomainPoolKernelParams, null);
+			cuCtxSynchronize();
 
-		JCudaDriver.cuLaunchKernel(setDomainPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-				setDomainPoolKernelParams, null);
-		cuCtxSynchronize();
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform set domains pool.");
+			throw new IllegalStateException(e);
+		}
 
 		if (prevRBS != rbs) { // skip redundancy computation
 			try {
