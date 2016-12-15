@@ -1,8 +1,8 @@
 extern "C"
-__device__ int getDnIdx(int dIdx, int dn, int nD, int rbs, int dScale, int expansion, bool isCenAlign);
+__device__ int getDnIdx(int dIdx, int dn, int nD, int rbs, int dScale, int expansion, int isCenAlign);
 
 __global__ void setDomainPoolKernel(
-  int nBatch,int rbs,int nDegree,int nD,int dScale,int expansion,bool isCenAlign, float regularize,
+  int nBatch,int rbs,int nDegree,int nD,int dScale,int expansion,int isCenAlign, float regularize,
 
   float *data,float *dataRev, // array of data and reverse data
   // arrays pointer
@@ -121,14 +121,14 @@ __global__ void setDomainPoolKernel(
   }
 }
 
-__device__ int getDnIdx(int dIdx, int dn, int nD, int rbs, int dScale, int expansion, bool isCenAlign){
+__device__ int getDnIdx(int dIdx, int dn, int nD, int rbs, int dScale, int expansion, int isCenAlign){
   // compute sumScale
   int sumScale = 0;
   for(int k = 1; k <= nD && k < dn; k++){
     sumScale += (int) powf( (float) dScale, (float) (1 + expansion * (k - 1))) ;
   }
   int dnIdx = dIdx;
-  if( !isCenAlign ){
+  if( isCenAlign == 0 ){
     // if left aligned
     dnIdx = dIdx + rbs * sumScale;
   } else {
