@@ -1,6 +1,4 @@
 extern "C"
-__device__ int getDnIdx(int dIdx, int dn, int nD, int rbs, int dScale, int expansion, int isCenAlign);
-
 __global__ void setDomainPoolKernel(
   int nBatch,int rbs,int nDegree,int nD,int dScale,int expansion,int isCenAlign, float regularize,
 
@@ -57,10 +55,22 @@ __global__ void setDomainPoolKernel(
     // for each block number dn
     for(int dn = 1; dn <= nD; dn++){
       // set reference domain block
-
-      int dnIdx = getDnIdx(dIdx, dn, nD, rbs, dScale, expansion, isCenAlign);
-      //int dnIdx = dIdx + rbs * sumScale; // * domian location factor
+      // compute sumScale
+      int sumScale = 0;
+      for(int k = 1; k <= nD && k < dn; k++){
+        sumScale += (int) powf( (float) dScale, (float) (1 + expansion * (k - 1))) ;
+      }
       int dnScale = (int) powf( (float) dScale, (float) (1 + expansion * (dn - 1)));
+
+      //int dnIdx = dIdx + rbs * sumScale; // * domian location factor
+      int dnIdx = dIdx;
+      if( isCenAlign == 0 ){
+        // if left aligned
+        dnIdx = dIdx + rbs * sumScale;
+      } else {
+        // if center aligned
+        dnIdx = dIdx + rbs/2 * (1 - dnScale);
+      }
 
       int padDA = rbs*dn; // number of row of DA
 
@@ -119,22 +129,4 @@ __global__ void setDomainPoolKernel(
       }
     }
   }
-}
-
-__device__ int getDnIdx(int dIdx, int dn, int nD, int rbs, int dScale, int expansion, int isCenAlign){
-  // compute sumScale
-  int sumScale = 0;
-  for(int k = 1; k <= nD && k < dn; k++){
-    sumScale += (int) powf( (float) dScale, (float) (1 + expansion * (k - 1))) ;
-  }
-  int dnIdx = dIdx;
-  if( isCenAlign == 0 ){
-    // if left aligned
-    dnIdx = dIdx + rbs * sumScale;
-  } else {
-    // if center aligned
-    int dnScale = (int) powf( (float) dScale, (float) (1 + expansion * (dn - 1)));
-    dnIdx = dIdx + rbs/2 * (1 - dnScale);
-  }
-  return dnIdx;
 }
