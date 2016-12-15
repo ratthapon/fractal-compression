@@ -413,29 +413,39 @@ public class CUCompressor extends Compressor {
 	}
 
 	private void launchSubPoolKernel(int blockSizeX, int gridSizeX) {
-		JCudaDriver.cuLaunchKernel(setRangePoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-				setRangePoolKernelParams, null);
-		cuCtxSynchronize();
-
-		JCudaDriver.cuLaunchKernel(setCoeffPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
-				setCoeffPoolKernelParams, null);
-		cuCtxSynchronize();
+		try {
+			JCudaDriver.cuLaunchKernel(setRangePoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+					setRangePoolKernelParams, null);
+			cuCtxSynchronize();
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform set ranges pool.");
+			throw new IllegalStateException(e);
+		}
+		try {
+			JCudaDriver.cuLaunchKernel(setCoeffPoolKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
+					setCoeffPoolKernelParams, null);
+			cuCtxSynchronize();
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform set coefficients pool.");
+			throw new IllegalStateException(e);
+		}
 	}
 
-	private void setSubPoolKernelParams(int nBatch, final int rbs, final int nDScale, Pointer dR, Pointer dDArrays,
+	private void setSubPoolKernelParams(int nBatch, final int rbs, final int nD, Pointer dR, Pointer dDArrays,
 			Pointer dRArrays, Pointer dAArrays, Pointer dBArrays, Pointer dIAArrays, Pointer dCArrays, Pointer dEArrays,
 			Pointer dSSEArrays, Pointer dDAP, Pointer dRAP, Pointer dAAP, Pointer dBAP, Pointer dIAAP, Pointer dCAP,
 			Pointer dEAP, Pointer dSSEAP) {
 
 		setRangePoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
-				Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nDScale }), Pointer.to(dR),
+				Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nD }),
+				Pointer.to(new int[] { parameters.getRangeScale() }), Pointer.to(dR),
 				// pointer to arrays data
 				Pointer.to(dRArrays), Pointer.to(dBArrays), Pointer.to(dEArrays),
 				// pointer to arrays pointer
 				Pointer.to(dRAP), Pointer.to(dBAP), Pointer.to(dEAP));
 
 		setCoeffPoolKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
-				Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nDScale }),
+				Pointer.to(new int[] { parameters.getNCoeff() }), Pointer.to(new int[] { nD }),
 				// pointer to arrays data
 				Pointer.to(dCArrays), Pointer.to(dSSEArrays),
 				// pointer to arrays pointer
