@@ -66,10 +66,10 @@ __global__ void setDomainPoolKernel(
       int dnIdx = dIdx;
       if( isCenAlign == 0 ){
         // if left aligned
-        dnIdx = dIdx + rbs * sumScale;
+        dnIdx = dIdx + rbs * sumScale + 1;
       } else {
         // if center aligned
-        dnIdx = dIdx + rbs/2 * (1 - dnScale);
+        dnIdx = dIdx + rbs/2 * (1 - dnScale) + 1;
       }
 
       int padDA = rbs*dn; // number of row of DA
