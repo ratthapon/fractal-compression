@@ -1,6 +1,7 @@
 package th.ac.kmitl.it.prip.fractal.compression.audio.gpu;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,6 +12,7 @@ import java.util.List;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -81,7 +83,27 @@ public class CUCompressorTest {
 	}
 
 	@Test
-	public void testCompress() throws IOException, UnsupportedAudioFileException {
+	public void testRunableCompressor() throws IOException, UnsupportedAudioFileException {
+		String fileDir = "test-classes//expected//synth_wav//";
+		List<String> parameterList = Files.readAllLines(Paths.get("test-classes//input-param.txt"));
+		String[] params = new String[parameterList.size()];
+		parameterList.toArray(params);
+		Parameters testParameters = new Parameters(params);
+		testParameters.setParameter("inpathprefix", fileDir);
+		testParameters.setParameter("inext", "raw");
+		testParameters.setParameter("gpu", "true");
+		DataSetManager dataSetManager = new DataSetManager(testParameters);
+
+		float[] audioData = dataSetManager.readAudio(input);
+		CUCompressor cuCompressor = new CUCompressor(audioData, testParameters);
+		cuCompressor.process();
+		assertTrue(cuCompressor.isDone());
+		cuCompressor.isDone();
+	}
+
+	@Ignore("Changing encoder")
+	@Test
+	public void testCompressOutput() throws IOException, UnsupportedAudioFileException {
 		String fileDir = "test-classes//expected//synth_wav//";
 		List<String> parameterList = Files.readAllLines(Paths.get("test-classes//input-param.txt"));
 		String[] params = new String[parameterList.size()];
