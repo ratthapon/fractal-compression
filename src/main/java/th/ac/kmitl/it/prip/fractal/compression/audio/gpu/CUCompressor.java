@@ -202,7 +202,7 @@ public class CUCompressor extends Compressor {
 				JCuda.cudaStreamSynchronize(stream);
 				batcTimeTick = System.nanoTime();
 
-				launchBatchMomentMatrix(nCoeff, dDAP, dRAP, dBAP, rbs, nBatch);
+				launchBatchMomentMatrix(dDAP, dRAP, dBAP, nBatch);
 
 				launchBatchLeastSquare(nCoeff, dBAP, dIAAP, dCAP, nBatch);
 
@@ -325,13 +325,15 @@ public class CUCompressor extends Compressor {
 		}
 	}
 
-	private void launchBatchMomentMatrix(final int nCoeff, Pointer dDAP, Pointer dRAP, Pointer dBAP, final int rbs,
-			int nBatch) {
+	private void launchBatchMomentMatrix(Pointer dDAP, Pointer dRAP, Pointer dBAP, int nBatch) {
+		final int nCoeff = parameters.getNCoeff();
+		final int rbs = parameters.getMaxBlockSize();
+		final int rScale = parameters.getRangeScale();
 		try {
 			// compute X'Y
-			JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, nCoeff, 1, rbs,
-					Pointer.to(new float[] { 1.0f }), dDAP, rbs, dRAP, rbs, Pointer.to(new float[] { 0.0f }), dBAP,
-					nCoeff, nBatch);
+			JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, nCoeff, 1, rbs * rScale,
+					Pointer.to(new float[] { 1.0f }), dDAP, rbs * rScale, dRAP, rbs * rScale,
+					Pointer.to(new float[] { 0.0f }), dBAP, nCoeff, nBatch);
 			JCuda.cudaStreamSynchronize(stream);
 		} catch (Exception e) {
 			LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform (X'Y) computation.");
