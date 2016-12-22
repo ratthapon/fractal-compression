@@ -29,7 +29,7 @@ __global__ void setDomainPoolKernel(
     int nCoeff = ((nDegree - 1) * nD + 1);
 
     // pointing array of pointers to array
-    const int daOffset = taskIdx * rbs * nCoeff;
+    const int daOffset = taskIdx * rbs * rScale * nCoeff;
     const int aaOffset = taskIdx * nCoeff * nCoeff;
     const int iaOffset = taskIdx * nCoeff * nCoeff;
 
@@ -47,7 +47,7 @@ __global__ void setDomainPoolKernel(
     }
 
     // initialize first column covariance matrix
-    for(int i = 0; i < rbs; i++){
+    for(int i = 0; i < rbs * rScale; i++){
       DA[daOffset + i] = 1.0f; // power 0
     }
 
@@ -67,13 +67,13 @@ __global__ void setDomainPoolKernel(
       int dnIdx = dIdx;
       if( isCenAlign == 0 ){
         // if left aligned
-        dnIdx = dIdx + rbs * rScale * sumScale + 1;
+        dnIdx = dIdx + rbs * sumScale + 1;
       } else {
         // if center aligned
-        dnIdx = dIdx + rbs/2  * rScale * (1 - dnScale) + 1;
+        dnIdx = dIdx + rbs/2 * (1 - dnScale) + 1;
       }
 
-      int padDA = rbs*dn; // number of row of DA
+      int padDA = rbs * rScale * dn; // number of row of DA
 
       // initialize column dn-th index
       for(int i = 0; i < rbs * rScale; i++){
@@ -83,7 +83,7 @@ __global__ void setDomainPoolKernel(
       // construct DA from domain blocks at power 1
       // copy elements
       for(int i = 0; i < rbs * rScale; i++){
-        int datIdx = dnIdx + i*dnScale;
+        int datIdx = dnIdx + i*dnScale/rScale;
         if(datIdx >=0 && datIdx < (nBatch/2)){
           if(taskIdx < (nBatch/2)){
             DA[daOffset + padDA + i] =
@@ -95,8 +95,8 @@ __global__ void setDomainPoolKernel(
         }
       }
 
-      // handling if domain blocks are larger than rbs (by downsample)
-      for(int ds = 1; ds < dnScale; ds++){
+      // // handling if domain blocks are larger than rbs (by downsample)
+      for(int ds = 1; ds < dnScale / rScale; ds++){
         // vec sumation
         for(int i = 0; i < rbs * rScale; i++){
           int datIdx = dnIdx + ds + i*dnScale/rScale;
