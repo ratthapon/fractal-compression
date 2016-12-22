@@ -208,8 +208,7 @@ public class CUCompressor extends Compressor {
 
 				launchBatchLimitCoeff(blockSizeX, gridSizeX, dDArrays, dRArrays, dCArrays, nBatch);
 
-				launchBatchComputeSSE(nCoeff, blockSizeX, gridSizeX, dDArrays, dCArrays, dEArrays, dSSEArrays, rbs,
-						nBatch);
+				launchBatchComputeSSE(blockSizeX, gridSizeX, dDArrays, dCArrays, dEArrays, dSSEArrays, nBatch);
 
 				batcTime = batcTime + (System.nanoTime() - batcTimeTick);
 
@@ -273,13 +272,17 @@ public class CUCompressor extends Compressor {
 		code[fIdx] = composeCode(minSSEIdx, code, codeBuffer, nCoeff, rbs, nBatch, sse);
 	}
 
-	private void launchBatchComputeSSE(final int nCoeff, int blockSizeX, int gridSizeX, Pointer dDArrays,
-			Pointer dCArrays, Pointer dEArrays, Pointer dSSEArrays, final int rbs, int nBatch) {
+	private void launchBatchComputeSSE(int blockSizeX, int gridSizeX, Pointer dDArrays, Pointer dCArrays,
+			Pointer dEArrays, Pointer dSSEArrays, int nBatch) {
+		final int nCoeff = parameters.getNCoeff();
+		final int rbs = parameters.getMaxBlockSize();
+		final int rScale = parameters.getRangeScale();
+
 		try {
 			// compute SumSquareErr = sum(E.^2)
 			sumSquareErrorKernelParams = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
-					Pointer.to(new int[] { nCoeff }), Pointer.to(new float[] { parameters.getCoeffLimit() }),
-					Pointer.to(dDArrays), Pointer.to(dCArrays), Pointer.to(dEArrays), Pointer.to(dSSEArrays));
+					Pointer.to(new int[] { rScale }), Pointer.to(new int[] { nCoeff }), Pointer.to(dDArrays),
+					Pointer.to(dCArrays), Pointer.to(dEArrays), Pointer.to(dSSEArrays));
 
 			JCudaDriver.cuLaunchKernel(sumSquareErrorKernel, gridSizeX, 1, 1, blockSizeX, 1, 1, 0, null,
 					sumSquareErrorKernelParams, null);
