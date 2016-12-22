@@ -397,9 +397,9 @@ public class CUCompressor extends Compressor {
 		if (prevRBS != rbs) { // skip redundancy computation
 			try {
 				// compute X'X
-				JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, nCoeff, nCoeff, rbs,
-						Pointer.to(new float[] { 1.0f }), dDAP, rbs, dDAP, rbs, Pointer.to(new float[] { 1.0f }), dAAP,
-						nCoeff, nBatch);
+				JCublas2.cublasSgemmBatched(cublasHandle, CUBLAS_OP_T, CUBLAS_OP_N, nCoeff, nCoeff, rbs * rScale,
+						Pointer.to(new float[] { 1.0f }), dDAP, rbs * rScale, dDAP, rbs * rScale,
+						Pointer.to(new float[] { 1.0f }), dAAP, nCoeff, nBatch);
 				JCuda.cudaStreamSynchronize(stream);
 			} catch (Exception e) {
 				LOGGER.log(Level.WARNING, "cuBlass Error : Can not perform covariance matrix (X'X) computation.");
