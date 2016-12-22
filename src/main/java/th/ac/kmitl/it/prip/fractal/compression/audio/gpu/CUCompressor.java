@@ -151,8 +151,8 @@ public class CUCompressor extends Compressor {
 			Pointer dR = new Pointer(); // range
 
 			// large allocation
-			batchCudaArraysAlloc(nCoeff, maxRBS, maxNBatch, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays, dCArrays,
-					dEArrays, dSSEArrays);
+			batchCudaArraysAlloc(maxNBatch, dDArrays, dRArrays, dAArrays, dBArrays, dIAArrays, dCArrays, dEArrays,
+					dSSEArrays);
 
 			cudaMalloc(dInfoArray, maxNBatch * Sizeof.INT);
 			cudaMalloc(dR, Sizeof.FLOAT * maxRBS);
@@ -596,17 +596,20 @@ public class CUCompressor extends Compressor {
 		}
 	}
 
-	private void batchCudaArraysAlloc(final int nCoeff, int maxRBS, int maxNBatch, Pointer dDArrays, Pointer dRArrays,
-			Pointer dAArrays, Pointer dBArrays, Pointer dIAArrays, Pointer dCArrays, Pointer dEArrays,
-			Pointer dSSEArrays) throws IllegalStateException {
+	private void batchCudaArraysAlloc(int maxNBatch, Pointer dDArrays, Pointer dRArrays, Pointer dAArrays,
+			Pointer dBArrays, Pointer dIAArrays, Pointer dCArrays, Pointer dEArrays, Pointer dSSEArrays)
+			throws IllegalStateException {
+		int maxRBS = parameters.getMaxBlockSize();
+		int rScale = parameters.getRangeScale();
+		int nCoeff = parameters.getNCoeff();
 		try {
-			cudaMalloc(dDArrays, maxNBatch * Sizeof.FLOAT * maxRBS * nCoeff);
-			cudaMalloc(dRArrays, maxNBatch * Sizeof.FLOAT * maxRBS);
+			cudaMalloc(dDArrays, maxNBatch * Sizeof.FLOAT * maxRBS * rScale * nCoeff);
+			cudaMalloc(dRArrays, maxNBatch * Sizeof.FLOAT * maxRBS * rScale);
 			cudaMalloc(dAArrays, maxNBatch * Sizeof.FLOAT * nCoeff * nCoeff);
 			cudaMalloc(dBArrays, maxNBatch * Sizeof.FLOAT * nCoeff);
 			cudaMalloc(dIAArrays, maxNBatch * Sizeof.FLOAT * nCoeff * nCoeff);
 			cudaMalloc(dCArrays, maxNBatch * Sizeof.FLOAT * nCoeff);
-			cudaMalloc(dEArrays, maxNBatch * Sizeof.FLOAT * maxRBS);
+			cudaMalloc(dEArrays, maxNBatch * Sizeof.FLOAT * maxRBS * rScale);
 			cudaMalloc(dSSEArrays, maxNBatch * Sizeof.FLOAT);
 		} catch (Exception e) {
 			LOGGER.log(Level.SEVERE, "cuBlass Error : Can not allocate cuda arrays.");
