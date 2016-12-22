@@ -1,6 +1,7 @@
 extern "C"
 __global__ void setDomainPoolKernel(
-  int nBatch,int rbs,int nDegree,int nD,int dScale,int expansion,int isCenAlign, float regularize,
+  int nBatch, int rbs, int nDegree, int nD, int dScale, int rScale,
+  int expansion, int isCenAlign, float regularize,
 
   float *data,float *dataRev, // array of data and reverse data
   // arrays pointer
@@ -66,22 +67,22 @@ __global__ void setDomainPoolKernel(
       int dnIdx = dIdx;
       if( isCenAlign == 0 ){
         // if left aligned
-        dnIdx = dIdx + rbs * sumScale + 1;
+        dnIdx = dIdx + rbs * rScale * sumScale + 1;
       } else {
         // if center aligned
-        dnIdx = dIdx + rbs/2 * (1 - dnScale) + 1;
+        dnIdx = dIdx + rbs/2  * rScale * (1 - dnScale) + 1;
       }
 
       int padDA = rbs*dn; // number of row of DA
 
       // initialize column dn-th index
-      for(int i = 0; i < rbs; i++){
+      for(int i = 0; i < rbs * rScale; i++){
         DA[daOffset + padDA + i] = 0.0f; // power 1
       }
 
       // construct DA from domain blocks at power 1
       // copy elements
-      for(int i = 0; i < rbs; i++){
+      for(int i = 0; i < rbs * rScale; i++){
         int datIdx = dnIdx + i*dnScale;
         if(datIdx >=0 && datIdx < (nBatch/2)){
           if(taskIdx < (nBatch/2)){
@@ -97,8 +98,8 @@ __global__ void setDomainPoolKernel(
       // handling if domain blocks are larger than rbs (by downsample)
       for(int ds = 1; ds < dnScale; ds++){
         // vec sumation
-        for(int i = 0; i < rbs; i++){
-          int datIdx = dnIdx + ds + i*dnScale;
+        for(int i = 0; i < rbs * rScale; i++){
+          int datIdx = dnIdx + ds + i*dnScale/rScale;
           if(datIdx >=0 && datIdx < (nBatch/2)){
             if(taskIdx < (nBatch/2)){
               DA[daOffset + padDA + i] =
@@ -112,15 +113,15 @@ __global__ void setDomainPoolKernel(
       }
 
       // vec scalig after resample
-      for(int i = 0; i < rbs; i++){
-        DA[daOffset + padDA + i] = DA[daOffset + padDA + i]/dnScale;
+      for(int i = 0; i < rbs * rScale; i++){
+        DA[daOffset + padDA + i] = DA[daOffset + padDA + i] / (dnScale/rScale);
       }
 
       // calculate next degree
       for(int deg = 2; deg <= nDegree - 1; deg++){
         int degPad = rbs * nD * (deg - 2) + rbs * dn;
         int nextDegPad = rbs * nD * (deg - 1) + rbs * dn;
-        for(int i = 0; i < rbs; i++){
+        for(int i = 0; i < rbs * rScale; i++){
           // power n>=2
           // D^n = D^1 * D^(n-1)
           DA[daOffset + nextDegPad + i] =
