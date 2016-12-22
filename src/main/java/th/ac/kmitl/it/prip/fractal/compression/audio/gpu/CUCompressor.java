@@ -206,7 +206,7 @@ public class CUCompressor extends Compressor {
 
 				launchBatchLeastSquare(nCoeff, dBAP, dIAAP, dCAP, nBatch);
 
-				launchBatchLimitCoeff(nCoeff, blockSizeX, gridSizeX, dDArrays, dRArrays, dCArrays, rbs, nBatch);
+				launchBatchLimitCoeff(blockSizeX, gridSizeX, dDArrays, dRArrays, dCArrays, nBatch);
 
 				launchBatchComputeSSE(nCoeff, blockSizeX, gridSizeX, dDArrays, dCArrays, dEArrays, dSSEArrays, rbs,
 						nBatch);
@@ -291,13 +291,17 @@ public class CUCompressor extends Compressor {
 		}
 	}
 
-	private void launchBatchLimitCoeff(final int nCoeff, int blockSizeX, int gridSizeX, Pointer dDArrays,
-			Pointer dRArrays, Pointer dCArrays, final int rbs, int nBatch) {
+	private void launchBatchLimitCoeff(int blockSizeX, int gridSizeX, Pointer dDArrays, Pointer dRArrays,
+			Pointer dCArrays, int nBatch) {
+		final int nCoeff = parameters.getNCoeff();
+		final int rbs = parameters.getMaxBlockSize();
+		final int rScale = parameters.getRangeScale();
+		final float coefflimit = parameters.getCoeffLimit();
 		try {
 			// limit coeff
 			if (nCoeff == 2 && parameters.getCoeffLimit() > 0) {
 				limitCoeffKernelParam = Pointer.to(Pointer.to(new int[] { nBatch }), Pointer.to(new int[] { rbs }),
-						Pointer.to(new float[] { parameters.getCoeffLimit() }), Pointer.to(dDArrays),
+						Pointer.to(new int[] { rScale }), Pointer.to(new float[] { coefflimit }), Pointer.to(dDArrays),
 						Pointer.to(dRArrays), Pointer.to(dCArrays));
 
 				// Call the kernel function.
