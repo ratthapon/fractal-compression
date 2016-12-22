@@ -1,7 +1,7 @@
 
 extern "C"
 __global__ void limitCoeff
-(int nBatch,int rbs, float maxCoeff,
+(int nBatch, int rbs, int rScale, float maxCoeff,
 	float *DA, float *RA, float *CA)
 	{
 		int taskIdx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -13,8 +13,8 @@ __global__ void limitCoeff
 			int nCoeff = 2;
 
 			// locate arrays pointer
-			int daOffset = i * rbs * nCoeff;
-			int raOffset = i * rbs;
+			int daOffset = i * rbs * rScale * nCoeff;
+			int raOffset = i * rbs * rScale;
 			int caOffset = i * nCoeff; // support only 2 coefficients
 
 			// check if need to refit coefficients
@@ -29,11 +29,11 @@ __global__ void limitCoeff
 				// refit coefficients
 				float suma = 0.0f; // power 1 coeff
 				float sumb = 0.0f; // power 0 coeff
-				for(int j = 0; j<rbs ;j++){
-					suma += DA[daOffset + rbs + j];
+				for(int j = 0; j<rbs * rScale ;j++){
+					suma += DA[daOffset + rbs * rScale + j];
 					sumb += RA[raOffset + j];
 				}
-				CA[caOffset] = (sumb - CA[caOffset + 1] * suma) / rbs;
+				CA[caOffset] = (sumb - CA[caOffset + 1] * suma) / (rbs * rScale);
 			}
 		}
 	}
