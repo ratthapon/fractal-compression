@@ -69,7 +69,6 @@
                         <goals>
                             <goal>run</goal>
                         </goals>
-
                     </execution>
                 </executions>
             </plugin>
@@ -125,27 +124,12 @@
         <dependency>
             <groupId>org.jcuda</groupId>
             <artifactId>jcuda</artifactId>
-            <version>0.8.0</version>
+            <version>${jcuda.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jcuda</groupId>
             <artifactId>jcublas</artifactId>
-            <version>0.8.0</version>
+            <version>${jcuda.version}</version>
         </dependency>
     </dependencies>
-    <profiles>
-        <profile>
-            <id>windows-x86_64</id>
-            <activation>
-                <os>
-                    <family>windows</family>
-                    <arch>amd64</arch>
-                </os>
-            </activation>
-            <properties>
-                <dllJ.version>windows-x86_64</dllJ.version>
-            </properties>
-        </profile>
-    </profiles>
-
 </project>
