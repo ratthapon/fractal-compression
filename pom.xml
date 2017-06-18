@@ -8,6 +8,7 @@
     <properties>
         <skipTests>false</skipTests>
         <jcuda.version>0.8.0</jcuda.version>
+        <params></params>
     </properties>
     <build>
         <plugins>
@@ -103,15 +104,13 @@
                 </executions>
                 <configuration>
                     <executable>java</executable>
-                    <arguments>
-                        <argument>-Djava.library.path=${project.build.directory}\lib</argument>
-                        <argument>-classpath</argument>
-                        <!-- automatically creates the classpath using all project dependencies,
-                            also adding the project build directory -->
-                        <classpath/>
-                        <!--Replace with your class reference if any -->
-                        <argument>th.ac.kmitl.it.prip.fractal.MainExecuter</argument>
-                    </arguments>
+                    <mainClass>th.ac.kmitl.it.prip.fractal.MainExecuter</mainClass>
+                    <commandlineArgs>
+                        -Djava.library.path=${project.build.directory}\lib
+                        -classpath %classpath
+                        th.ac.kmitl.it.prip.fractal.MainExecuter
+                        ${params}
+                    </commandlineArgs>
                     <workingDirectory>${project.build.directory}</workingDirectory>
                 </configuration>
             </plugin>
