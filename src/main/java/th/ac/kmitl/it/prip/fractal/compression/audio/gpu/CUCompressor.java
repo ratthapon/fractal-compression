@@ -83,10 +83,19 @@ public class CUCompressor extends Compressor {
 		// Obtain a function pointer to the kernel function.
 		loadCUKernelFunctions();
 
+		// allocate input data
+		int nR = (int) Math.ceil((double) inputAudioData.length / parameters.getMaxBlockSize());
+		data = new float[nR * parameters.getMaxBlockSize()];
+		nSamples = data.length;
+
 		// set compressor's input data
-		data = new float[inputAudioData.length];
 		for (int i = 0; i < inputAudioData.length; i++) {
 			data[i] = inputAudioData[i];
+		}
+
+		// pad compressor's input data
+		for (int i = inputAudioData.length; i < data.length; i++) {
+			data[i] = 0.0f;
 		}
 	}
 
